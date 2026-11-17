@@ -74,6 +74,8 @@ body {
 }
 
 button, input, select, textarea { font: inherit; color: inherit; }
+/* Any class that sets `display` would otherwise override the hidden attribute. */
+[hidden] { display: none !important; }
 button { background: none; border: 0; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 
