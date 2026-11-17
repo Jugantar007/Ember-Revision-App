@@ -1,0 +1,337 @@
+{
+  "section": "DSA & Patterns",
+  "version": 1,
+  "items": [
+    {
+      "id": "dsa-001",
+      "type": "concept",
+      "difficulty": 1,
+      "tags": ["complexity"],
+      "q": "Amortized complexity of appending to a Python list, and why isn't it O(n)?",
+      "a_short": "O(1) amortized. The list over-allocates, so most appends are free and the occasional O(n) resize is spread across them.",
+      "a_full": "Growth is geometric (roughly 1.125x for large lists in CPython). Over n appends the total copy work is O(n), so the average per append is O(1). Any single append can still be O(n).",
+      "mcq": { "options": ["O(n) always", "O(1) amortized via geometric over-allocation", "O(log n)", "O(1) worst case"], "correct": 1 }
+    },
+    {
+      "id": "dsa-002",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["two-pointers", "pattern"],
+      "q": "When do you reach for two pointers?",
+      "a_short": "Sorted array (or one you can sort) where you need a pair/triplet meeting a condition, or in-place partitioning.",
+      "a_full": "Signals: 'sorted array', 'pair that sums to', 'remove duplicates in place', 'container with most water'. It turns an O(n²) nested loop into O(n) by exploiting the ordering — move the pointer that can improve the result.",
+      "mcq": { "options": ["Any unsorted array problem", "Sorted input needing pairs/partitioning", "Graph traversal", "Tree balancing"], "correct": 1 }
+    },
+    {
+      "id": "dsa-003",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["sliding-window", "pattern"],
+      "q": "What signals a sliding-window problem?",
+      "a_short": "'Contiguous subarray/substring' plus a constraint — longest, shortest, or a fixed size k.",
+      "a_full": "Fixed window: slide and update in O(1). Variable window: expand right until the constraint breaks, then shrink from the left. Each element enters and leaves once, so it's O(n) even though there are two loops.",
+      "a_code": "def longest_unique(s):\n    seen, left, best = {}, 0, 0\n    for right, ch in enumerate(s):\n        if ch in seen and seen[ch] >= left:\n            left = seen[ch] + 1\n        seen[ch] = right\n        best = max(best, right - left + 1)\n    return best",
+      "mcq": { "options": ["Any subsequence problem", "Contiguous subarray/substring with a constraint", "Sorting problems", "Tree problems"], "correct": 1 }
+    },
+    {
+      "id": "dsa-004",
+      "type": "coding",
+      "difficulty": 1,
+      "tags": ["hashmap", "two-sum"],
+      "q": "Two Sum in one pass — what's the key idea and complexity?",
+      "a_short": "Store each value's index in a hashmap as you go and look up the complement `target - x`. O(n) time, O(n) space.",
+      "a_code": "def two_sum(nums, target):\n    seen = {}\n    for i, x in enumerate(nums):\n        if target - x in seen:\n            return [seen[target - x], i]\n        seen[x] = i\n    return []",
+      "a_full": "The general pattern: trade space for time by remembering what you've already seen, so each element only needs an O(1) lookup instead of a scan.",
+      "mcq": { "options": ["Sort then binary search, O(n log n)", "Hashmap of complements, O(n)", "Nested loops, O(n²)", "Heap, O(n log k)"], "correct": 1 }
+    },
+    {
+      "id": "dsa-005",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["binary-search", "pattern"],
+      "q": "What is 'binary search on the answer'?",
+      "a_short": "When the answer space is monotonic — a candidate either works or doesn't, and feasibility only flips once — binary search over candidate answers rather than array indices.",
+      "a_full": "Signals: 'minimum capacity to ship in D days', 'smallest divisor', 'minimize the maximum'. Write a `feasible(x)` predicate that's monotone, then binary search x. Complexity is O(n log(range)).",
+      "mcq": { "options": ["Searching a sorted array", "Binary searching over candidate answers using a monotone feasibility test", "Searching a BST", "Ternary search"], "correct": 1 },
+      "asked_at": ["Amazon", "Uber"]
+    },
+    {
+      "id": "dsa-006",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["stack", "monotonic"],
+      "q": "What problems does a monotonic stack solve?",
+      "a_short": "'Next greater/smaller element' style questions — largest rectangle in histogram, daily temperatures, trapping rain water.",
+      "a_full": "Keep the stack increasing or decreasing; when the incoming element breaks the order, pop and resolve those elements — the incoming one is their answer. Each element is pushed and popped once, so it's O(n).",
+      "mcq": { "options": ["Shortest path", "Next greater/smaller element problems", "Range sum queries", "String matching"], "correct": 1 }
+    },
+    {
+      "id": "dsa-007",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["heap", "top-k"],
+      "q": "Top-k largest from n elements — which approach and why?",
+      "a_short": "A min-heap of size k: O(n log k) time, O(k) space. Beats sorting (O(n log n)) when k << n.",
+      "a_full": "Push each element, pop the smallest whenever the heap exceeds k. Quickselect gives O(n) average but O(n²) worst case and needs the whole array in memory — the heap works on a stream.",
+      "a_code": "import heapq\ndef top_k(nums, k):\n    h = []\n    for x in nums:\n        heapq.heappush(h, x)\n        if len(h) > k: heapq.heappop(h)\n    return h",
+      "mcq": { "options": ["Sort, O(n log n)", "Min-heap of size k, O(n log k)", "Max-heap of size n, O(n)", "Binary search"], "correct": 1 }
+    },
+    {
+      "id": "dsa-008",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["graph", "bfs", "dfs"],
+      "q": "BFS vs DFS — when does the choice actually matter?",
+      "a_short": "BFS finds shortest paths in unweighted graphs and explores level by level; DFS is for connectivity, cycles, topological order and backtracking.",
+      "a_full": "BFS uses a queue and O(width) memory; DFS uses a stack (or recursion) and O(depth) memory. On a wide shallow graph DFS is cheaper; on a deep narrow one BFS is. If the question says 'shortest' and edges are unweighted, it's BFS.",
+      "mcq": { "options": ["BFS for shortest path in unweighted graphs; DFS for connectivity/cycles/backtracking", "DFS always finds shortest paths", "They are interchangeable", "BFS uses less memory always"], "correct": 0 }
+    },
+    {
+      "id": "dsa-009",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["graph", "topo-sort"],
+      "q": "What is a topological sort and when is it impossible?",
+      "a_short": "A linear ordering of a DAG where every edge u→v puts u before v. Impossible if the graph has a cycle.",
+      "a_full": "Kahn's algorithm: repeatedly take nodes with in-degree 0. If you process fewer than n nodes, a cycle exists — this doubles as cycle detection. Classic uses: course scheduling, build dependency order, layer ordering in a compute graph.",
+      "mcq": { "options": ["Impossible for weighted graphs", "Impossible when the graph has a cycle", "Impossible for disconnected graphs", "Always possible"], "correct": 1 }
+    },
+    {
+      "id": "dsa-010",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["union-find"],
+      "q": "What is Union-Find good for, and what's its complexity?",
+      "a_short": "Dynamic connectivity — grouping elements and asking 'same set?'. Near O(1) amortized with path compression plus union by rank.",
+      "a_full": "Formally O(α(n)), the inverse Ackermann function, which is under 5 for any practical n. Uses: Kruskal's MST, counting connected components, detecting cycles in an undirected graph, 'number of islands' variants with incremental updates.",
+      "mcq": { "options": ["Shortest paths", "Dynamic connectivity, near O(1) amortized", "Range queries", "Sorting"], "correct": 1 }
+    },
+    {
+      "id": "dsa-011",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["dp"],
+      "q": "Memoization vs tabulation.",
+      "a_short": "Memoization is top-down recursion plus a cache; tabulation is bottom-up iteration filling a table.",
+      "a_full": "Memoization only computes states you actually reach and is easier to write from the recurrence. Tabulation has no recursion limit, better constants, and allows space optimization — keeping only the last row or two instead of the full table.",
+      "mcq": { "options": ["Memoization is bottom-up", "Memoization is top-down with a cache; tabulation is bottom-up", "They have different complexities", "Tabulation uses recursion"], "correct": 1 }
+    },
+    {
+      "id": "dsa-012",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["dp", "knapsack"],
+      "q": "0/1 knapsack: recurrence, complexity, and the space trick.",
+      "a_short": "`dp[i][w] = max(dp[i-1][w], dp[i-1][w-wt[i]] + val[i])`. O(nW) time and space, reducible to O(W) by iterating weights downward in a 1-D array.",
+      "a_full": "Iterate w from high to low so each item is used at most once. Iterating low to high instead gives the unbounded knapsack, where items can repeat. Note O(nW) is pseudo-polynomial — it's exponential in the number of bits of W.",
+      "mcq": { "options": ["O(n log W)", "O(nW) time, reducible to O(W) space", "O(n²)", "O(2^n) with no DP possible"], "correct": 1 }
+    },
+    {
+      "id": "dsa-013",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["dp", "lis"],
+      "q": "Longest Increasing Subsequence — the O(n log n) method.",
+      "a_short": "Maintain `tails[i]` = smallest possible tail of an increasing subsequence of length i+1; binary search each element's insert position.",
+      "a_full": "The `tails` array is always sorted, so `bisect_left` finds where the element goes. Its final length is the LIS length — but the array itself is not a valid LIS, so reconstructing the actual subsequence needs parent pointers.",
+      "a_code": "from bisect import bisect_left\ndef lis(nums):\n    tails = []\n    for x in nums:\n        i = bisect_left(tails, x)\n        if i == len(tails): tails.append(x)\n        else: tails[i] = x\n    return len(tails)",
+      "mcq": { "options": ["Sort and compare, O(n log n)", "Patience/tails array with binary search, O(n log n)", "DP only, O(n²) is optimal", "Greedy, O(n)"], "correct": 1 }
+    },
+    {
+      "id": "dsa-014",
+      "type": "coding",
+      "difficulty": 3,
+      "tags": ["backtracking", "template"],
+      "q": "What's the general backtracking template?",
+      "a_short": "Choose → explore → un-choose, with a base case that records a complete solution.",
+      "a_code": "def backtrack(path, choices, out):\n    if is_solution(path):\n        out.append(path[:])      # copy!\n        return\n    for c in choices:\n        if not valid(path, c): continue\n        path.append(c)           # choose\n        backtrack(path, next_choices(c), out)\n        path.pop()               # un-choose",
+      "a_full": "Forgetting `path[:]` is the single most common bug — you append a reference to a list that keeps mutating. Pruning with `valid()` is what turns brute force into something that finishes.",
+      "mcq": { "options": ["Sort, scan, return", "Choose, explore, un-choose", "Divide and conquer", "Memoize every state"], "correct": 1 }
+    },
+    {
+      "id": "dsa-015",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["linked-list", "floyd"],
+      "q": "How does Floyd's cycle detection work, and how do you find the cycle's start?",
+      "a_short": "Slow moves 1, fast moves 2. If they meet there's a cycle. Then reset one pointer to head and move both one step at a time — they meet at the cycle entry.",
+      "a_full": "The second phase works because the distance from head to the cycle start equals the distance from the meeting point to the cycle start, modulo the loop length. O(n) time, O(1) space — the whole reason to use it over a hash set.",
+      "mcq": { "options": ["Hash set of visited nodes", "Slow/fast pointers, then reset one to head", "Reverse the list", "Sort the nodes"], "correct": 1 }
+    },
+    {
+      "id": "dsa-016",
+      "type": "coding",
+      "difficulty": 2,
+      "tags": ["intervals"],
+      "q": "Merge overlapping intervals — approach and complexity?",
+      "a_short": "Sort by start, then sweep: if the current start <= last end, extend the last end; otherwise push a new interval. O(n log n).",
+      "a_code": "def merge(iv):\n    iv.sort(key=lambda x: x[0])\n    out = []\n    for s, e in iv:\n        if out and s <= out[-1][1]:\n            out[-1][1] = max(out[-1][1], e)\n        else:\n            out.append([s, e])\n    return out",
+      "a_full": "`max(out[-1][1], e)` matters — a fully-contained interval would otherwise shrink the merged range. Almost every interval problem starts with sorting by start or end.",
+      "mcq": { "options": ["O(n)", "Sort by start then sweep, O(n log n)", "O(n²) nested comparison", "Heap, O(n log k)"], "correct": 1 }
+    },
+    {
+      "id": "dsa-017",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["prefix-sum"],
+      "q": "What does a prefix-sum array buy you?",
+      "a_short": "O(1) range sums after O(n) preprocessing: `sum(i..j) = pre[j+1] - pre[i]`.",
+      "a_full": "Combined with a hashmap it solves 'subarray sums to k' in O(n): store counts of each prefix sum seen, and for each new prefix look up `prefix - k`. The 2-D version is the integral image used in classic computer vision.",
+      "mcq": { "options": ["O(log n) range sums", "O(1) range sums after O(n) preprocessing", "Faster sorting", "O(1) insertion"], "correct": 1 }
+    },
+    {
+      "id": "dsa-018",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["trie"],
+      "q": "When is a trie the right structure?",
+      "a_short": "Prefix queries over a set of strings — autocomplete, 'does any word start with', word search on a board.",
+      "a_full": "Lookup is O(L) in the key length, independent of how many words are stored, which beats a hashmap when you need prefixes rather than exact matches. Cost is memory: a node per character, though it shares common prefixes.",
+      "mcq": { "options": ["Exact-match lookup only", "Prefix queries over a string set", "Range sums", "Shortest paths"], "correct": 1 }
+    },
+    {
+      "id": "dsa-019",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["quickselect"],
+      "q": "What does Quickselect do and what's its complexity?",
+      "a_short": "Finds the k-th smallest element in O(n) average by partitioning and recursing into only one side. O(n²) worst case.",
+      "a_full": "Same partition step as quicksort, but you discard the half that can't contain k, so the work is n + n/2 + n/4 ... = O(n). Random pivot selection makes the worst case vanishingly unlikely; median-of-medians guarantees O(n) but with bad constants.",
+      "mcq": { "options": ["O(n log n) always", "O(n) average, O(n²) worst case", "O(log n)", "O(n) guaranteed"], "correct": 1 }
+    },
+    {
+      "id": "dsa-020",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["graph", "dijkstra"],
+      "q": "When does Dijkstra fail, and what do you use instead?",
+      "a_short": "It fails with negative edge weights. Use Bellman-Ford, which also detects negative cycles.",
+      "a_full": "Dijkstra's correctness rests on the assumption that once a node is finalized no shorter path exists — a negative edge can break that later. Complexity with a binary heap is O((V+E) log V); Bellman-Ford is O(VE).",
+      "mcq": { "options": ["Fails on dense graphs", "Fails with negative edge weights; use Bellman-Ford", "Fails on undirected graphs", "Fails with more than 1000 nodes"], "correct": 1 }
+    },
+    {
+      "id": "dsa-021",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["trees", "traversal"],
+      "q": "In-order, pre-order, post-order — which is which, and what's each for?",
+      "a_short": "In-order L→Root→R (sorted output for a BST), pre-order Root→L→R (serialize/copy a tree), post-order L→R→Root (delete, or compute from children up).",
+      "a_full": "Post-order is the one to reach for when a node's result depends on its children — height, diameter, subtree sums. Level-order (BFS) is a fourth option, used when you need to work by depth.",
+      "mcq": { "options": ["In-order gives sorted output for a BST", "Pre-order gives sorted output for a BST", "Post-order gives sorted output", "All three give the same order"], "correct": 0 }
+    },
+    {
+      "id": "dsa-022",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["bst", "validation"],
+      "q": "Why is this BST validation wrong?",
+      "code": "def is_bst(node):\n    if not node: return True\n    if node.left and node.left.val >= node.val: return False\n    if node.right and node.right.val <= node.val: return False\n    return is_bst(node.left) and is_bst(node.right)",
+      "a_short": "It only checks parent-child pairs, not the full subtree range. A node deep in the left subtree can exceed the root and still pass.",
+      "a_full": "Tree [5, 1, 6, null, null, 4, 7] passes this check but isn't a BST — 4 sits in the right subtree of 5. The fix is to pass down a (low, high) bound and narrow it at each step.",
+      "a_code": "def is_bst(node, lo=float('-inf'), hi=float('inf')):\n    if not node: return True\n    if not (lo < node.val < hi): return False\n    return is_bst(node.left, lo, node.val) and is_bst(node.right, node.val, hi)",
+      "mcq": { "options": ["It's correct", "It only checks immediate children, not subtree bounds", "It has wrong complexity", "It fails on empty trees"], "correct": 1 },
+      "asked_at": ["Uber"]
+    },
+    {
+      "id": "dsa-023",
+      "type": "coding",
+      "difficulty": 3,
+      "tags": ["lru", "design"],
+      "q": "How do you get O(1) get and put in an LRU cache?",
+      "a_short": "Hashmap from key to node, plus a doubly linked list for recency. The map gives O(1) lookup, the list gives O(1) move-to-front and evict-from-tail.",
+      "a_full": "A singly linked list won't do — you need the previous pointer to unlink in O(1). In Python, `collections.OrderedDict` with `move_to_end` gives you both for free, and `functools.lru_cache` is the ready-made decorator.",
+      "mcq": { "options": ["Array plus timestamps", "Hashmap plus doubly linked list", "Min-heap by access time", "Sorted dict"], "correct": 1 }
+    },
+    {
+      "id": "dsa-024",
+      "type": "concept",
+      "difficulty": 1,
+      "tags": ["strings", "hashing"],
+      "q": "Two strings are anagrams — fastest check?",
+      "a_short": "Compare character counts: O(n) with a 26-length array or a `Counter`. Sorting is O(n log n).",
+      "a_full": "For a fixed small alphabet the count array is O(1) space. For grouping anagrams, the sorted string or the count tuple becomes the dictionary key.",
+      "mcq": { "options": ["Sort both, O(n log n)", "Compare character counts, O(n)", "Nested loops, O(n²)", "Hash the whole string"], "correct": 1 }
+    },
+    {
+      "id": "dsa-025",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["bit-manipulation"],
+      "q": "What do `x & (x-1)` and `x & -x` give you?",
+      "a_short": "`x & (x-1)` clears the lowest set bit; `x & -x` isolates it.",
+      "a_full": "Counting set bits by repeatedly doing `x &= x-1` runs in O(number of set bits) rather than O(bit width). `x & -x` is the core of a Fenwick tree. Also: `x ^ x == 0` powers the 'single number among pairs' trick, and `x & (x-1) == 0` tests for a power of two.",
+      "mcq": { "options": ["Both isolate the lowest set bit", "x&(x-1) clears the lowest set bit; x&-x isolates it", "Both clear the highest bit", "They are equivalent"], "correct": 1 }
+    },
+    {
+      "id": "dsa-026",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["sorting", "complexity"],
+      "q": "Merge sort vs quicksort vs heapsort — the trade-off table.",
+      "a_short": "Merge: O(n log n) guaranteed, stable, O(n) extra space. Quick: O(n log n) average but O(n²) worst, in-place, unstable, best cache behaviour. Heap: O(n log n) guaranteed, in-place, unstable, poor locality.",
+      "a_full": "Real libraries blend them: introsort is quicksort that switches to heapsort on deep recursion; Timsort is merge sort exploiting existing runs. Quicksort usually wins in practice on arrays because of cache locality, despite the worse bound.",
+      "mcq": { "options": ["Quicksort is O(n log n) worst case", "Merge is stable with O(n) space; quick is in-place but O(n²) worst case", "Heapsort is stable", "Merge sort is in-place"], "correct": 1 }
+    },
+    {
+      "id": "dsa-027",
+      "type": "coding",
+      "difficulty": 2,
+      "tags": ["linked-list"],
+      "q": "Reverse a singly linked list iteratively.",
+      "a_short": "Walk the list keeping `prev`, `curr`, `next`; point each node backwards. O(n) time, O(1) space.",
+      "a_code": "def reverse(head):\n    prev = None\n    while head:\n        nxt = head.next\n        head.next = prev\n        prev = head\n        head = nxt\n    return prev",
+      "a_full": "Save `next` before you overwrite `head.next` — losing it is the classic bug. The recursive version is elegant but O(n) stack, which matters for long lists.",
+      "mcq": { "options": ["O(n) time O(n) space", "O(n) time O(1) space", "O(n²) time", "O(log n) time"], "correct": 1 }
+    },
+    {
+      "id": "dsa-028",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["recursion", "limits"],
+      "q": "Why does deep recursion fail in Python, and what do you do about it?",
+      "a_short": "Default recursion limit is 1000 frames and CPython has no tail-call optimization. Convert to an explicit stack, or raise the limit carefully.",
+      "a_full": "`sys.setrecursionlimit` raises the Python-level cap but not the C stack, so too high a value segfaults. For tree/graph work on large inputs, rewrite DFS with an explicit stack — it also makes the state easier to inspect.",
+      "mcq": { "options": ["Python optimizes tail calls", "No TCO and a ~1000 frame limit; use an explicit stack", "Recursion is always faster", "The limit is unlimited by default"], "correct": 1 }
+    },
+    {
+      "id": "dsa-029",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["dp", "space-optimization"],
+      "q": "How do you cut a 2-D DP table to O(n) space?",
+      "a_short": "If `dp[i]` only depends on `dp[i-1]`, keep two rows (or one, iterating in the right direction).",
+      "a_full": "Direction matters: for 0/1 knapsack you iterate weights downward so each item is counted once; for unbounded knapsack you go upward. Space optimization usually destroys your ability to reconstruct the solution path — keep the full table if the question asks for the actual subsequence.",
+      "mcq": { "options": ["Use recursion instead", "Keep only the rows the recurrence depends on", "Use a hashmap", "It's not possible"], "correct": 1 }
+    },
+    {
+      "id": "dsa-030",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["matrix"],
+      "q": "Common patterns for 2-D grid problems?",
+      "a_short": "BFS/DFS flood fill for regions, a direction array for neighbours, in-place marking to avoid a visited set, and layer-by-layer walking for spiral/rotate.",
+      "a_full": "`DIRS = [(0,1),(1,0),(0,-1),(-1,0)]` keeps neighbour code clean. Mutating the grid (e.g. setting visited cells to '0') saves O(mn) space but destroys the input — ask whether that's allowed.",
+      "mcq": { "options": ["Always sort the grid first", "Flood fill with a direction array; mark in place to save space", "Convert to a 1-D array", "Use a heap"], "correct": 1 }
+    },
+    {
+      "id": "dsa-031",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["complexity", "analysis"],
+      "q": "What's the complexity of building a heap from n elements — and why isn't it O(n log n)?",
+      "a_short": "O(n). Sift-down from the middle up: most nodes are near the leaves and sift down only a level or two.",
+      "a_full": "The sum Σ(n/2^h)·h over heights converges to 2n. Inserting one at a time really is O(n log n) — `heapq.heapify` uses the linear method, so prefer it over a loop of `heappush`.",
+      "mcq": { "options": ["O(n log n)", "O(n)", "O(log n)", "O(n²)"], "correct": 1 }
+    },
+    {
+      "id": "dsa-032",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["interview-strategy"],
+      "q": "You're stuck on a coding question in an interview. What's the recovery sequence?",
+      "a_short": "State the brute force out loud with its complexity, solve a tiny concrete example by hand, then name what's wasteful about brute force — that's where the optimization lives.",
+      "a_full": "Brute force on the whiteboard is worth far more than silence: it shows you understand the problem and gives the interviewer something to hint against. Most optimizations come from one of three moves — sort to expose structure, hash to remember what you've seen, or two pointers/window to avoid rescanning.",
+      "mcq": { "options": ["Stay silent until you see the optimal solution", "State the brute force and its complexity, then identify the waste", "Ask for a different question", "Start coding anything immediately"], "correct": 1 }
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "updated": "2026-11-16",
+  "sections": [
+    {
+      "id": "python-fundamentals",
+      "title": "Python Fundamentals",
+      "icon": "🐍",
+      "file": "python-fundamentals.json",
+      "blurb": "Mutability, scoping, generators, decorators, the GIL."
+    },
+    {
+      "id": "python-oop",
+      "title": "Python OOP",
+      "icon": "🧱",
+      "file": "python-oop.json",
+      "blurb": "Classes, MRO, dunders, descriptors, design patterns."
+    },
+    {
+      "id": "dsa-patterns",
+      "title": "DSA & Patterns",
+      "icon": "🧩",
+      "file": "dsa-patterns.json",
+      "blurb": "Complexity, the core patterns, and when to reach for each."
+    },
+    {
+      "id": "ml-classical",
+      "title": "Classical ML",
+      "icon": "📊",
+      "file": "ml-classical.json",
+      "blurb": "Bias-variance, regularization, metrics, trees, clustering."
+    },
+    {
+      "id": "deep-learning",
+      "title": "Deep Learning",
+      "icon": "🧠",
+      "file": "deep-learning.json",
+      "blurb": "Backprop, CNNs, attention, normalization, optimizers."
+    },
+    {
+      "id": "edge-ai",
+      "title": "Edge AI & Deployment",
+      "icon": "⚡",
+      "file": "edge-ai.json",
+      "blurb": "Quantization, pruning, distillation, runtimes, latency."
+    },
+    {
+      "id": "c-systems",
+      "title": "C & Systems",
+      "icon": "🔩",
+      "file": "c-systems.json",
+      "blurb": "Pointers, memory layout, cache behaviour, fixed-point."
+    }
+  ]
+}

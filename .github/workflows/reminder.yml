@@ -1,0 +1,52 @@
+name: Revision reminders
+
+# Times are UTC. IST is UTC+5:30.
+#   03:25 UTC = 08:55 IST  (morning block)
+#   14:25 UTC = 19:55 IST  (evening block)
+# GitHub's scheduler is best-effort and can run several minutes late when the
+# fleet is busy — avoid :00 and the top of the hour, which are the worst slots.
+on:
+  schedule:
+    - cron: '25 3 * * *'
+    - cron: '25 14 * * *'
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'Which message set to use'
+        required: false
+        default: 'evening'
+        type: choice
+        options: [morning, evening]
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install web-push
+        run: npm install --no-save web-push@3
+
+      - name: Work out which slot this run is
+        id: slot
+        run: |
+          if [ -n "${{ github.event.inputs.slot }}" ]; then
+            echo "value=${{ github.event.inputs.slot }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "25 3 * * *" ]; then
+            echo "value=morning" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=evening" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send reminder
+        env:
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          PUSH_SUBSCRIPTION: ${{ secrets.PUSH_SUBSCRIPTION }}
+          SLOT: ${{ steps.slot.outputs.value }}
+        run: node scripts/send-reminder.js

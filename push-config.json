@@ -1,0 +1,4 @@
+{
+  "_comment": "Paste your VAPID PUBLIC key here after running: npx web-push generate-vapid-keys. The private key goes in a GitHub repo secret, never in this file.",
+  "vapidPublicKey": ""
+}

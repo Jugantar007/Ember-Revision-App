@@ -1,0 +1,323 @@
+{
+  "section": "Edge AI & Deployment",
+  "version": 1,
+  "items": [
+    {
+      "id": "edge-001",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["quantization", "motivation"],
+      "q": "Name the four benefits of quantizing a model to INT8.",
+      "a_short": "4× smaller weights, less memory bandwidth, faster integer math on dedicated units, and lower energy per operation.",
+      "a_full": "Energy is often the real driver on a phone: an INT8 multiply-accumulate costs roughly an order of magnitude less energy than FP32, and a DRAM access costs far more than either. Reducing bytes moved frequently matters more than reducing FLOPs.",
+      "mcq": { "options": ["Only model size", "Size, bandwidth, integer throughput and energy per op", "Only accuracy", "Only training speed"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-002",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["quantization", "formula"],
+      "q": "Write the affine quantization formula and define each term.",
+      "a_short": "`q = clamp(round(x/s) + z, q_min, q_max)` and dequantize as `x ≈ s·(q − z)`. `s` is the scale (step size), `z` is the zero-point.",
+      "a_full": "For asymmetric INT8 over [x_min, x_max]: `s = (x_max − x_min)/255` and `z = round(q_min − x_min/s)`. The zero-point guarantees that real 0.0 maps exactly to an integer — essential, because padding and ReLU outputs must stay exactly zero or errors accumulate.",
+      "a_code": "s = (x_max - x_min) / (q_max - q_min)\nz = round(q_min - x_min / s)\nq = clip(round(x / s) + z, q_min, q_max)\nx_hat = s * (q - z)",
+      "mcq": { "options": ["q = x * s + z", "q = clamp(round(x/s) + z); x ≈ s(q − z)", "q = round(x) only", "q = x / 255"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-003",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["quantization", "symmetric"],
+      "q": "Symmetric vs asymmetric quantization — when is each right?",
+      "a_short": "Symmetric forces zero-point = 0 and uses a range centred on zero. Asymmetric allows a non-zero offset to fit a skewed range tightly.",
+      "a_full": "Weights are roughly zero-centred, so symmetric is standard and cheaper — no cross-terms in the matmul. Activations after ReLU are one-sided ([0, max]), so symmetric would waste half the range; asymmetric fits them far better. The usual production choice is symmetric per-channel weights with asymmetric per-tensor activations.",
+      "mcq": { "options": ["Symmetric for activations, asymmetric for weights", "Symmetric (z=0) for weights; asymmetric for one-sided activations like post-ReLU", "They give identical accuracy", "Asymmetric is always better"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-004",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["quantization", "granularity"],
+      "q": "Per-tensor vs per-channel quantization.",
+      "a_short": "Per-tensor uses one scale for the whole weight tensor; per-channel uses one per output channel. Per-channel is far more accurate when channel ranges differ widely.",
+      "a_full": "Depthwise convolutions are the classic case — their per-channel weight ranges can differ by orders of magnitude, and per-tensor quantization of MobileNet collapses accuracy. Per-channel costs a small vector of scales and is supported by essentially every modern runtime for weights. Activations stay per-tensor because their ranges are only known at runtime.",
+      "mcq": { "options": ["Per-tensor is more accurate", "Per-channel uses one scale per output channel and is much better for depthwise convs", "They are equivalent for all layers", "Per-channel applies to activations only"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-005",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["quantization", "ptq", "qat"],
+      "q": "PTQ vs QAT — the trade-off.",
+      "a_short": "PTQ quantizes a trained model using a small calibration set — minutes, no labels. QAT simulates quantization during training so the model adapts — hours to days, needs the training pipeline.",
+      "a_full": "Rule of thumb: try PTQ first. If INT8 accuracy drop is under ~1%, ship it. QAT recovers most of the remaining gap and is usually necessary for INT4, for depthwise-heavy architectures, and for small models with little redundancy.",
+      "mcq": { "options": ["QAT is faster to run than PTQ", "PTQ is post-hoc with calibration data; QAT simulates quantization during training for better accuracy", "PTQ needs labelled data", "They produce identical models"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-006",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["quantization", "calibration"],
+      "q": "What is a calibration dataset and what makes a good one?",
+      "a_short": "A small unlabelled sample (typically 100-1000 inputs) run through the model to record activation ranges. It must be representative of production data.",
+      "a_full": "Range-setting methods: min/max (simple, outlier-sensitive), percentile (clip the tail), MSE-optimal, and KL-divergence (TensorRT's approach, matching the quantized distribution to the float one). Calibrating on the wrong distribution is a leading cause of 'works in the lab, fails in the field'.",
+      "mcq": { "options": ["A labelled test set for accuracy measurement", "A small unlabelled representative sample used to record activation ranges", "The training set itself, fully", "Synthetic random noise"], "correct": 1 }
+    },
+    {
+      "id": "edge-007",
+      "type": "concept",
+      "difficulty": 4,
+      "tags": ["qat", "ste"],
+      "q": "How does gradient descent work through a rounding operation in QAT?",
+      "a_short": "The Straight-Through Estimator: the forward pass rounds, the backward pass pretends the rounding was the identity function.",
+      "a_full": "`round()` has zero gradient almost everywhere, which would kill learning. STE passes the incoming gradient through unchanged (usually clipped to the quantization range). It's a biased estimator but works well in practice. LSQ extends this by learning the scale parameter itself through the same trick.",
+      "mcq": { "options": ["Rounding is differentiable", "Straight-Through Estimator: forward rounds, backward treats it as identity", "Gradients are estimated numerically", "QAT skips the backward pass"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-008",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["quantization", "sensitivity"],
+      "q": "Which parts of a network are most sensitive to quantization?",
+      "a_short": "The first and last layers, depthwise convolutions, attention softmax and LayerNorm, and anything with a wide dynamic range or few channels.",
+      "a_full": "Standard practice is to keep the first conv and the final classifier in higher precision — they're a tiny fraction of total FLOPs but carry outsized accuracy impact. Mixed-precision assignment via per-layer sensitivity analysis (quantize one layer at a time, measure the drop) is the systematic way to decide.",
+      "mcq": { "options": ["Middle layers are most sensitive", "First/last layers, depthwise convs, softmax and LayerNorm", "All layers equally", "Only fully-connected layers"], "correct": 1 }
+    },
+    {
+      "id": "edge-009",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["quantization", "dynamic"],
+      "q": "Dynamic vs static quantization.",
+      "a_short": "Dynamic quantizes weights ahead of time but computes activation scales at runtime per batch. Static pre-computes activation scales from calibration.",
+      "a_full": "Dynamic needs no calibration data and handles varying ranges well, which suits NLP/RNN workloads — but the runtime range computation costs time and usually blocks full integer execution on an NPU. Static is what you want for a fixed-function accelerator.",
+      "mcq": { "options": ["Dynamic pre-computes everything", "Dynamic computes activation scales at runtime; static uses calibration-derived scales", "Static requires no calibration", "They are the same"], "correct": 1 }
+    },
+    {
+      "id": "edge-010",
+      "type": "concept",
+      "difficulty": 4,
+      "tags": ["quantization", "outliers", "llm"],
+      "q": "Why do large transformers resist naive INT8 quantization?",
+      "a_short": "Systematic activation outliers — a few channels carry values 10-100× larger than the rest, so a per-tensor scale wastes almost all its range on them.",
+      "a_full": "Fixes: LLM.int8() keeps outlier channels in FP16 and the rest in INT8. SmoothQuant migrates the difficulty from activations into weights with a per-channel scaling that the weights absorb, since weights quantize more easily. AWQ and GPTQ take weight-only routes, which suit memory-bound token-by-token decoding.",
+      "mcq": { "options": ["They have too many parameters", "Systematic activation outliers in a few channels destroy per-tensor scaling", "Attention has no integer implementation", "They use LayerNorm"], "correct": 1 }
+    },
+    {
+      "id": "edge-011",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["pruning"],
+      "q": "Structured vs unstructured pruning — which actually speeds things up?",
+      "a_short": "Structured (whole channels, filters, heads) gives real speedup on any hardware. Unstructured (individual weights) gives high sparsity but needs sparse kernels to pay off.",
+      "a_full": "A 90% unstructured-sparse model usually runs no faster on a standard NPU — dense matmul hardware can't exploit scattered zeros. NVIDIA's 2:4 semi-structured sparsity is the compromise: hardware-supported, 2× throughput, modest accuracy cost. For edge, prefer structured pruning or a smaller architecture outright.",
+      "mcq": { "options": ["Unstructured always gives speedup", "Structured gives real speedup; unstructured needs sparse kernel support", "Both are equivalent", "Pruning never helps latency"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-012",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["pruning", "lottery-ticket"],
+      "q": "What is the Lottery Ticket Hypothesis?",
+      "a_short": "A dense network contains a sparse subnetwork that, trained from the *original* initialization, matches the full model's accuracy.",
+      "a_full": "The procedure is iterative magnitude pruning: train, prune the smallest weights, rewind the survivors to their initial values, retrain. The rewind is the crucial part — the same mask with fresh random init performs much worse. On large models the rewind is usually to an early training step rather than step zero.",
+      "mcq": { "options": ["Random pruning works as well as magnitude pruning", "A sparse subnetwork trained from the original init matches the dense model", "Pruning after training is always lossless", "Larger models always prune better"], "correct": 1 }
+    },
+    {
+      "id": "edge-013",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["distillation"],
+      "q": "How does knowledge distillation work, and why do soft targets help?",
+      "a_short": "A small student is trained to match a large teacher's softened output distribution. Soft targets carry 'dark knowledge' — the relative similarity between wrong classes.",
+      "a_full": "Loss = α·CE(student, hard labels) + (1−α)·T²·KL(student_T ‖ teacher_T), where temperature T>1 softens both distributions. The T² factor restores gradient magnitude, which scales as 1/T². Knowing that a given image is 'mostly cat, somewhat tiger, never truck' is far richer supervision than a one-hot label.",
+      "mcq": { "options": ["The student copies the teacher's weights", "The student matches the teacher's softened output distribution, learning inter-class similarity", "Distillation requires identical architectures", "It only works for classification with 2 classes"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-014",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["fusion", "batchnorm"],
+      "q": "How do you fold BatchNorm into the preceding convolution?",
+      "a_short": "At inference BN is a fixed affine transform per channel, so its scale and shift can be absorbed into the conv's weights and bias — removing the BN layer entirely.",
+      "a_full": "`W' = W · γ/√(σ² + ε)` and `b' = (b − μ)·γ/√(σ² + ε) + β`. This is free: fewer kernel launches, fewer memory round-trips, and it's mandatory before INT8 quantization because an unfolded BN introduces a float op in the middle of an integer pipeline.",
+      "a_code": "scale = gamma / sqrt(var + eps)\nW_fold = W * scale.reshape(-1, 1, 1, 1)\nb_fold = (b - mean) * scale + beta",
+      "mcq": { "options": ["BN cannot be folded", "BN is a fixed per-channel affine map at inference, absorbable into conv weights and bias", "Folding requires retraining", "Only possible with LayerNorm"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-015",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["fusion", "runtime"],
+      "q": "Why is operator fusion such a large win on edge hardware?",
+      "a_short": "It avoids writing intermediate tensors to DRAM and reading them back. Memory traffic, not arithmetic, is usually the bottleneck.",
+      "a_full": "Conv→BN→ReLU as three kernels means three full passes over the feature map. Fused into one, the intermediate values never leave registers or on-chip SRAM. This is why a FLOP reduction often fails to translate into a latency reduction — you cut the maths but not the data movement.",
+      "mcq": { "options": ["It reduces the number of parameters", "It avoids DRAM round-trips for intermediate tensors", "It improves accuracy", "It enables larger batch sizes"], "correct": 1 }
+    },
+    {
+      "id": "edge-016",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["roofline", "bandwidth"],
+      "q": "What is arithmetic intensity and why does it decide your optimization strategy?",
+      "a_short": "FLOPs per byte of memory traffic. Low intensity means memory-bound — reducing FLOPs won't help; you need to reduce data movement.",
+      "a_full": "The roofline model: performance is min(peak compute, intensity × bandwidth). Depthwise convs, elementwise ops and single-token LLM decoding are all memory-bound. Dense matmul with large tiles is compute-bound. Profile first — optimizing FLOPs on a memory-bound layer is wasted effort, which is the usual explanation for 'I cut FLOPs 4× and latency barely moved'.",
+      "mcq": { "options": ["Operations per second", "FLOPs per byte of memory traffic, deciding compute- vs memory-bound", "Model size divided by latency", "Energy per inference"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-017",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["latency", "throughput"],
+      "q": "Latency vs throughput — why can't you optimize both?",
+      "a_short": "Latency is time for one inference; throughput is inferences per second. Batching raises throughput by amortizing overhead, but each individual request waits longer.",
+      "a_full": "Edge inference is almost always batch-size-1 and latency-bound — a camera pipeline needs this frame now. Server inference batches aggressively. This is why server benchmarks mislead on device: the hardware looks underutilized at batch 1 because there's no work to hide memory latency behind.",
+      "mcq": { "options": ["They are the same metric", "Latency is per-inference time; throughput is rate — batching helps throughput, hurts latency", "Batching improves both", "Throughput matters most at the edge"], "correct": 1 }
+    },
+    {
+      "id": "edge-018",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["soc", "accelerators"],
+      "q": "On a mobile SoC, what are the CPU, GPU, DSP and NPU each good for?",
+      "a_short": "CPU: control flow and unsupported ops, lowest startup cost. GPU: parallel float work, graphics interop. DSP/NPU: highest efficiency for quantized fixed-function inference, but a limited operator set.",
+      "a_full": "On Snapdragon, the Hexagon processor with its tensor accelerator handles INT8/INT4 inference at by far the best performance per watt. The practical constraint is operator coverage: an unsupported op forces a fallback that splits the graph and costs a round-trip between memory spaces, which can erase the accelerator's advantage entirely.",
+      "mcq": { "options": ["NPU is best for all workloads", "CPU for control flow, GPU for parallel float, DSP/NPU for efficient quantized inference with limited op support", "GPU is always fastest", "DSP handles float best"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-019",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["qualcomm", "tooling"],
+      "q": "What are SNPE, QNN and AIMET in Qualcomm's AI stack?",
+      "a_short": "SNPE is the Snapdragon Neural Processing Engine runtime; QNN (AI Engine Direct) is the lower-level backend API across CPU/GPU/HTP; AIMET is the open-source model optimization library for quantization and compression.",
+      "a_full": "Typical flow: train in PyTorch → optimize and simulate quantization with AIMET → export to ONNX → convert to a DLC or QNN context binary → run on the Hexagon tensor accelerator. AIMET's cross-layer equalization and bias correction are the techniques that make PTQ viable on depthwise-heavy mobile architectures.",
+      "mcq": { "options": ["All three are runtimes", "SNPE is a runtime, QNN is the lower-level backend API, AIMET is the model optimization library", "AIMET is a compiler", "They are competing products"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-020",
+      "type": "concept",
+      "difficulty": 4,
+      "tags": ["quantization", "cle"],
+      "q": "What is Cross-Layer Equalization and what problem does it solve?",
+      "a_short": "It rescales weights between consecutive layers so each layer's per-channel ranges become more uniform, making per-tensor quantization viable.",
+      "a_full": "It exploits the positive scaling equivariance of ReLU: `ReLU(s·x)/s = ReLU(x)`, so you can divide one layer's channel by s and multiply the next layer's corresponding input channel by s without changing the function. MobileNetV2's depthwise layers have wildly uneven channel ranges; CLE plus bias correction recovers most of the INT8 accuracy without any retraining.",
+      "mcq": { "options": ["It prunes redundant channels", "It rescales weights across layers using ReLU scale equivariance to equalize channel ranges", "It is a distillation method", "It replaces batch normalization"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-021",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["metrics", "quantization-error"],
+      "q": "How do you measure quantization damage layer by layer?",
+      "a_short": "SQNR (signal-to-quantization-noise ratio) or cosine similarity between the float and quantized activation tensors, computed per layer.",
+      "a_full": "SQNR = 10·log₁₀(‖x‖² / ‖x − x̂‖²) in dB. Plotting it per layer immediately shows which layer collapsed, long before end-to-end accuracy tells you anything. Watch for error compounding — a mid-network layer with modest SQNR can still wreck the output if later layers amplify it.",
+      "mcq": { "options": ["Only end-to-end accuracy", "Per-layer SQNR or cosine similarity between float and quantized activations", "Parameter count difference", "Training loss"], "correct": 1 }
+    },
+    {
+      "id": "edge-022",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["onnx", "interop"],
+      "q": "What role does ONNX play, and where does it break down?",
+      "a_short": "A vendor-neutral graph format for moving models between frameworks and runtimes. It breaks on custom ops, opset mismatches, and dynamic control flow.",
+      "a_full": "The common failure: a model exports fine but the target runtime doesn't support an op at that opset version, so it silently falls back to CPU. Always run `onnx.checker`, simplify the graph (onnx-simplifier), and verify numerics against the source framework before converting further. Dynamic shapes and Python-level control flow in `forward` are the usual culprits.",
+      "mcq": { "options": ["ONNX is a training framework", "A neutral graph interchange format; it breaks on custom ops, opset mismatch and dynamic control flow", "ONNX only supports vision models", "ONNX replaces quantization"], "correct": 1 }
+    },
+    {
+      "id": "edge-023",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["tflite", "runtime"],
+      "q": "What is a TFLite delegate?",
+      "a_short": "A plugin that hands part of the graph to a hardware backend — GPU, NNAPI, Hexagon, Core ML — while the TFLite interpreter runs the rest.",
+      "a_full": "The delegate claims the subgraphs it supports. Too many unsupported ops fragments the graph into many partitions, and each boundary costs a data transfer. Checking the partition count is one of the first things to do when a hardware-accelerated model is slower than expected.",
+      "mcq": { "options": ["A quantization method", "A plugin that offloads supported subgraphs to a hardware backend", "A model compression format", "A profiling tool"], "correct": 1 }
+    },
+    {
+      "id": "edge-024",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["profiling", "device"],
+      "q": "A model hits its latency target in the lab but misses it on a phone after 30 seconds. Why?",
+      "a_short": "Thermal throttling. Sustained inference heats the SoC and the governor drops clocks, so steady-state performance is well below peak.",
+      "a_full": "Always benchmark sustained performance, not a burst — run for minutes and report the steady-state percentile, not the best run. Other suspects: the big/little core the thread landed on, DVFS ramp-up latency on the first inferences, and other apps competing for memory bandwidth.",
+      "mcq": { "options": ["The model got bigger", "Thermal throttling reduces sustained clocks below peak", "Memory leak in the runtime", "Quantization error accumulates over time"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-025",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["llm", "kv-cache"],
+      "q": "Why is a KV cache essential for on-device LLM inference, and what does it cost?",
+      "a_short": "Without it, generating each token re-computes attention over the whole prefix — O(n²) total. With it, each step is O(n). The cost is memory that grows linearly with context.",
+      "a_full": "KV cache size = 2 × layers × heads × head_dim × seq_len × bytes. For a 7B model at 4k context in FP16 that's gigabytes — often exceeding the weights themselves on a phone. Mitigations: grouped-query attention (fewer KV heads), sliding-window attention, and quantizing the cache to INT8 or INT4.",
+      "mcq": { "options": ["It speeds up training", "It avoids recomputing attention over the prefix each token, at the cost of memory linear in context", "It reduces model weights", "It improves accuracy"], "correct": 1 }
+    },
+    {
+      "id": "edge-026",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["precision", "formats"],
+      "q": "FP32, FP16, BF16, INT8, INT4 — what distinguishes them?",
+      "a_short": "BF16 keeps FP32's 8-bit exponent with fewer mantissa bits, so it has FP32's range but less precision. FP16 has more precision but a narrow range that overflows easily. INT8/INT4 are fixed-point with an explicit scale.",
+      "a_full": "BF16 is the training default on modern accelerators precisely because its range avoids the loss-scaling gymnastics FP16 needs. For inference at the edge, INT8 is the workhorse and INT4 is used for weight-only quantization of LLMs, where memory bandwidth dominates.",
+      "mcq": { "options": ["BF16 has more precision than FP16", "BF16 trades mantissa bits for FP32's exponent range; FP16 has more precision but narrow range", "INT8 has an exponent field", "They are all floating point"], "correct": 1 }
+    },
+    {
+      "id": "edge-027",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["nas", "architecture"],
+      "q": "Why are MobileNet, EfficientNet and friends designed differently from ResNet?",
+      "a_short": "They optimize for FLOPs, parameters and memory access on constrained hardware rather than raw accuracy — depthwise separable convs, inverted residuals, and compound scaling.",
+      "a_full": "MobileNetV2's inverted residual expands channels, does a cheap depthwise conv, then projects back down, with the skip connection on the narrow ends to minimize memory. EfficientNet scales depth, width and resolution together via a compound coefficient. Hardware-aware NAS goes further by using measured on-device latency, not FLOPs, as the search objective — because the two correlate poorly.",
+      "mcq": { "options": ["They are simply smaller ResNets", "They optimize for FLOPs/memory on constrained hardware via depthwise separable convs and inverted residuals", "They avoid convolution entirely", "They are trained differently but architecturally identical"], "correct": 1 }
+    },
+    {
+      "id": "edge-028",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["deployment", "checklist"],
+      "q": "What's your checklist before shipping a model to a device?",
+      "a_short": "Verify numerics against the float baseline, fold BN, quantize and measure per-layer SQNR, benchmark sustained on-device latency, check operator coverage, and measure memory peak and energy.",
+      "a_full": "Also: confirm preprocessing matches exactly between training and device (resize interpolation and normalization constants are a classic mismatch), test the cold-start path including model load time, and keep the float model available for A/B comparison on real inputs.",
+      "mcq": { "options": ["Just check accuracy on the test set", "Numerics vs float, BN folding, per-layer SQNR, sustained latency, op coverage, memory and energy", "Only measure FLOPs", "Only measure model size"], "correct": 1 }
+    },
+    {
+      "id": "edge-029",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["quantization", "accumulator"],
+      "q": "If weights and activations are INT8, why is the accumulator INT32?",
+      "a_short": "Products of two INT8 values need 16 bits, and summing thousands of them in a convolution would overflow anything smaller.",
+      "a_full": "A 3×3×256 convolution accumulates 2304 products. INT32 gives headroom with no risk of wraparound. The accumulator is then requantized back to INT8 by multiplying by the combined scale (implemented as a fixed-point multiply plus a right shift, since the hardware avoids floating point) and adding the output zero-point.",
+      "mcq": { "options": ["For compatibility with FP32", "INT8×INT8 needs 16 bits and summing thousands of products would overflow a smaller accumulator", "INT32 is faster than INT8", "It is an arbitrary convention"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "edge-030",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["fixed-point"],
+      "q": "What is Q-format fixed-point notation?",
+      "a_short": "Qm.n means m integer bits and n fractional bits in an integer word — the value is `raw / 2ⁿ`.",
+      "a_full": "Q1.15 in a 16-bit word represents [−1, 1) with a step of 2⁻¹⁵. Multiplying two Qm.n numbers gives Q2m.2n, so you must shift right by n to restore the format — forgetting that shift is the classic fixed-point DSP bug. Quantization scales that are powers of two reduce to pure shifts, which is why some runtimes constrain scales that way.",
+      "mcq": { "options": ["m fractional bits, n integer bits", "m integer bits and n fractional bits; value = raw / 2^n", "A floating-point format", "A compression scheme"], "correct": 1 }
+    }
+  ]
+}

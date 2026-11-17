@@ -1,0 +1,282 @@
+{
+  "section": "Deep Learning",
+  "version": 1,
+  "items": [
+    {
+      "id": "dl-001",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["backprop"],
+      "q": "What is backpropagation, precisely?",
+      "a_short": "Reverse-mode automatic differentiation: compute the loss gradient w.r.t. every parameter by applying the chain rule backwards through the computation graph.",
+      "a_full": "Reverse mode is chosen because there is one scalar output and millions of inputs — one backward pass gives every gradient, at roughly the cost of one forward pass. Forward mode would need one pass per parameter. Activations from the forward pass must be stored, which is why training memory far exceeds inference memory.",
+      "mcq": { "options": ["Forward-mode differentiation", "Reverse-mode autodiff applying the chain rule backwards", "A numerical finite-difference method", "A second-order optimization method"], "correct": 1 }
+    },
+    {
+      "id": "dl-002",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["gradients", "vanishing"],
+      "q": "What causes vanishing gradients and what fixes them?",
+      "a_short": "Repeated multiplication by small derivatives through many layers drives the gradient toward zero. Fixes: ReLU-family activations, residual connections, normalization, careful init, LSTM/GRU gates.",
+      "a_full": "Sigmoid's derivative peaks at 0.25, so a 10-layer stack can shrink the gradient by 10⁻⁶. Residual connections give the gradient an identity path straight to earlier layers — that's the single most important architectural fix. Exploding gradients are the mirror case; clip the norm.",
+      "mcq": { "options": ["Too high a learning rate", "Repeated multiplication by small derivatives through depth", "Too much data", "Batch size too large"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "dl-003",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["activations"],
+      "q": "Why did ReLU displace sigmoid and tanh in hidden layers?",
+      "a_short": "Its gradient is exactly 1 for positive inputs, so it doesn't saturate; it's trivially cheap; and it produces sparse activations.",
+      "a_full": "The cost is dying ReLU — a unit stuck at negative input has zero gradient forever. Leaky ReLU, PReLU, ELU and GELU address that. GELU is the transformer default; ReLU6 is common on mobile because it bounds the activation range, which helps quantization.",
+      "mcq": { "options": ["ReLU is smoother", "ReLU doesn't saturate for positive inputs and is cheap to compute", "ReLU is bounded", "ReLU has more parameters"], "correct": 1 }
+    },
+    {
+      "id": "dl-004",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["batchnorm"],
+      "q": "What does batch normalization do, and what's the train/inference difference?",
+      "a_short": "It normalizes each channel to zero mean and unit variance over the batch, then rescales with learned γ and β. At inference it uses running statistics instead of batch statistics.",
+      "a_full": "It allows higher learning rates and smooths the loss landscape (the original 'internal covariate shift' explanation is now disputed). It also adds noise that acts as a regularizer. Problems: it breaks at batch size 1, couples samples within a batch, and the train/inference mismatch is a frequent source of deployment bugs. BN folds into the preceding convolution at inference — free speedup.",
+      "mcq": { "options": ["Normalizes weights", "Normalizes activations per channel over the batch; uses running stats at inference", "Only used at inference", "Replaces the activation function"], "correct": 1 }
+    },
+    {
+      "id": "dl-005",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["normalization"],
+      "q": "BatchNorm vs LayerNorm — why do transformers use LayerNorm?",
+      "a_short": "BN normalizes across the batch per channel; LN normalizes across features within each sample. LN is batch-size independent and handles variable sequence lengths.",
+      "a_full": "NLP batches have ragged lengths and padding, which corrupts batch statistics. LN also behaves identically at train and inference, removing the running-statistics problem entirely. GroupNorm is the middle ground for vision at small batch sizes; RMSNorm drops the mean-centering for speed.",
+      "mcq": { "options": ["LN normalizes over the batch", "BN normalizes over the batch per channel; LN over features per sample, so it's batch-independent", "They are identical", "BN works better with variable-length sequences"], "correct": 1 }
+    },
+    {
+      "id": "dl-006",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["dropout", "regularization"],
+      "q": "How does dropout work at train and at inference?",
+      "a_short": "During training each unit is zeroed with probability p; at inference nothing is dropped. Inverted dropout scales by 1/(1−p) at train time so activations keep the same expected magnitude.",
+      "a_full": "It prevents co-adaptation by forcing redundant representations, and approximates an ensemble of sub-networks. Modern CNNs rely on BN and augmentation instead and often skip dropout entirely; transformers still use it on attention and FFN outputs.",
+      "mcq": { "options": ["Active at inference, off during training", "Zeroes units during training only; inverted dropout rescales to preserve expectation", "Drops weights permanently", "Only applies to the input layer"], "correct": 1 }
+    },
+    {
+      "id": "dl-007",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["cnn"],
+      "q": "Why convolution instead of a fully-connected layer for images?",
+      "a_short": "Parameter sharing, local connectivity and translation equivariance — vastly fewer parameters and a built-in prior that matches image structure.",
+      "a_full": "A 224×224×3 image into 1000 hidden units needs ~150M weights fully connected. A 3×3×3 conv with 64 filters needs 1,792. The same filter detects an edge wherever it occurs, so you don't need to re-learn it per position.",
+      "mcq": { "options": ["Convolutions are more expressive", "Parameter sharing, locality and translation equivariance", "Convolutions need no activation", "They train without gradients"], "correct": 1 }
+    },
+    {
+      "id": "dl-008",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["cnn", "parameters"],
+      "q": "How many learnable parameters in a Conv2d with 64 input channels, 128 output channels, 3×3 kernel, with bias?",
+      "code": "nn.Conv2d(in_channels=64, out_channels=128,\n          kernel_size=3, bias=True)",
+      "a_short": "73,856 — that's 128 × (3 × 3 × 64) = 73,728 weights plus 128 biases.",
+      "a_full": "The formula is `out_ch × (k_h × k_w × in_ch) + out_ch`. Note it's independent of the input's spatial size — that's the parameter sharing. The FLOP count, by contrast, scales with the output spatial dimensions.",
+      "mcq": { "options": ["8,256", "73,856", "576", "147,584"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "dl-009",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["cnn", "receptive-field"],
+      "q": "What is the receptive field and how do you grow it cheaply?",
+      "a_short": "The region of input that influences one output unit. Grow it by stacking small kernels, striding/pooling, or dilated convolutions.",
+      "a_full": "Two stacked 3×3 convs give a 5×5 receptive field with 18C² parameters instead of 25C² for one 5×5 — plus an extra nonlinearity. Dilated convolutions expand it exponentially with no extra parameters, which is why they're used in segmentation and audio models.",
+      "mcq": { "options": ["The number of filters", "The input region influencing one output unit", "The output resolution", "The batch dimension"], "correct": 1 }
+    },
+    {
+      "id": "dl-010",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["cnn", "1x1"],
+      "q": "What is a 1×1 convolution for?",
+      "a_short": "Channel mixing and dimensionality change — it's a per-pixel fully-connected layer across channels.",
+      "a_full": "Used as a bottleneck to cut channels before an expensive 3×3 (ResNet, Inception), as the pointwise half of a depthwise-separable block, and to add a nonlinearity without touching spatial dimensions. Cheap in FLOPs but memory-bandwidth bound on edge hardware.",
+      "mcq": { "options": ["Spatial smoothing", "Channel mixing and dimensionality change", "Increasing resolution", "Replacing pooling"], "correct": 1 }
+    },
+    {
+      "id": "dl-011",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["cnn", "efficient", "mobilenet"],
+      "q": "What is a depthwise separable convolution and how much does it save?",
+      "a_short": "A depthwise conv (one filter per input channel) followed by a 1×1 pointwise conv. Cost drops by roughly 1/N + 1/k², about 8-9× for a 3×3 kernel.",
+      "a_full": "Standard conv cost is k²·C_in·C_out·H·W. Separable is k²·C_in·H·W + C_in·C_out·H·W. This is the core of MobileNet and the reason it runs on phones. The catch: it is memory-bandwidth bound, so the real-world speedup is well under the FLOP reduction — a recurring theme in edge deployment.",
+      "mcq": { "options": ["2× fewer FLOPs", "Roughly 8-9× fewer FLOPs for a 3×3 kernel", "No change in FLOPs", "It increases FLOPs but improves accuracy"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "dl-012",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["resnet", "residual"],
+      "q": "Why do residual connections make very deep networks trainable?",
+      "a_short": "`y = F(x) + x` gives gradients an identity path backwards, so they reach early layers undiminished, and the block only has to learn a residual.",
+      "a_full": "Before ResNet, deeper plain networks had *higher* training error — a pure optimization failure, not overfitting. The skip path means the identity mapping is the default, so adding layers can't make things worse. Residuals are now near-universal, transformers included.",
+      "mcq": { "options": ["They add parameters", "They give gradients an identity path and make identity the default mapping", "They reduce overfitting only", "They replace normalization"], "correct": 1 }
+    },
+    {
+      "id": "dl-013",
+      "type": "concept",
+      "difficulty": 4,
+      "tags": ["attention", "transformer"],
+      "q": "Write the scaled dot-product attention formula and explain each piece.",
+      "a_short": "`Attention(Q,K,V) = softmax(QKᵀ / √d_k) · V`. Query asks, Key advertises, Value carries the content.",
+      "a_full": "QKᵀ scores every query against every key. Dividing by √d_k keeps the dot products from growing with dimension and pushing softmax into saturation where gradients vanish. Softmax turns scores into weights; multiplying by V produces a weighted sum of values. Complexity is O(n²d) in sequence length — the bottleneck everything from FlashAttention to linear attention tries to fix.",
+      "mcq": { "options": ["softmax(QK^T)·V with no scaling", "softmax(QK^T/√d_k)·V — scaling prevents softmax saturation", "QK^T·V with ReLU", "softmax(Q+K)·V"], "correct": 1 },
+      "asked_at": ["Qualcomm", "Google"]
+    },
+    {
+      "id": "dl-014",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["attention", "multi-head"],
+      "q": "Why multiple attention heads instead of one big one?",
+      "a_short": "Each head attends in a different learned subspace, so the model can track several relationship types at once instead of averaging them into one distribution.",
+      "a_full": "d_model is split across heads, so the parameter count is unchanged — 8 heads of 64 dims rather than 1 head of 512. One head might track syntactic dependency while another tracks coreference. Heads are concatenated and mixed by an output projection.",
+      "mcq": { "options": ["It increases parameters linearly", "Each head attends in a different subspace; d_model is split so cost is unchanged", "It reduces sequence length", "Heads are redundant copies"], "correct": 1 }
+    },
+    {
+      "id": "dl-015",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["transformer", "positional"],
+      "q": "Why do transformers need positional encoding?",
+      "a_short": "Self-attention is permutation-equivariant — it sees a set, not a sequence. Position must be injected explicitly.",
+      "a_full": "Original: fixed sinusoids of varying frequency, which extrapolate to unseen lengths. Modern: learned absolute embeddings, or relative schemes like RoPE (rotates Q and K by position-dependent angles) and ALiBi (a linear distance penalty on attention scores), both of which generalize better to long contexts.",
+      "mcq": { "options": ["To speed up training", "Because self-attention is permutation-equivariant and has no inherent order", "To reduce parameters", "To normalize the input"], "correct": 1 }
+    },
+    {
+      "id": "dl-016",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["transformer", "rnn"],
+      "q": "Transformer vs RNN — the real trade-off.",
+      "a_short": "Transformers parallelize across the sequence and model long dependencies directly, but cost O(n²) in sequence length. RNNs are O(n) sequential with O(1) state, but can't parallelize over time and struggle with long range.",
+      "a_full": "Path length between any two tokens is O(1) for attention versus O(n) for an RNN — that's why gradients survive long distances. For streaming edge inference, an RNN's constant state is genuinely attractive; that's what revived SSMs like Mamba.",
+      "mcq": { "options": ["Transformers are O(n), RNNs O(n²)", "Transformers parallelize but cost O(n²); RNNs are O(n) sequential with O(1) state", "RNNs parallelize better", "They have identical complexity"], "correct": 1 }
+    },
+    {
+      "id": "dl-017",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["lstm", "rnn"],
+      "q": "What are the LSTM gates and what does each do?",
+      "a_short": "Forget (what to discard from the cell state), input (what new information to write), output (what to expose as the hidden state).",
+      "a_full": "The cell state is an additive highway, which is why gradients survive far better than in a vanilla RNN's repeated multiplication. GRU merges forget and input into an update gate and drops the separate cell state — fewer parameters, usually comparable accuracy.",
+      "mcq": { "options": ["Read, write, execute", "Forget, input, output", "Encode, decode, attend", "Reset, update, output"], "correct": 1 }
+    },
+    {
+      "id": "dl-018",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["optimizers"],
+      "q": "SGD+momentum vs Adam vs AdamW.",
+      "a_short": "SGD+momentum often generalizes best but needs tuning. Adam adapts a per-parameter learning rate from first and second moments — fast, forgiving. AdamW decouples weight decay from the gradient update.",
+      "a_full": "In Adam, L2 penalty added to the gradient gets divided by the adaptive denominator, so effective decay varies per parameter — AdamW applies decay directly to the weights instead, which is why it's the transformer standard. Vision CNNs still frequently land on SGD+momentum for the last fraction of a point of accuracy.",
+      "mcq": { "options": ["AdamW adds momentum to Adam", "AdamW decouples weight decay from the adaptive gradient update", "Adam has no momentum", "SGD always beats Adam"], "correct": 1 }
+    },
+    {
+      "id": "dl-019",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["learning-rate", "schedules"],
+      "q": "Why warmup, and why decay?",
+      "a_short": "Warmup avoids destructive updates early when Adam's second-moment estimates are unreliable and weights are random. Decay lets the model settle into a minimum instead of bouncing around it.",
+      "a_full": "Cosine decay with linear warmup is the default for transformers. One-cycle is popular in vision. If loss explodes in the first few hundred steps, warmup length is the first thing to increase — especially at large batch sizes.",
+      "mcq": { "options": ["Warmup speeds up early training", "Warmup avoids destructive early updates; decay lets training settle into a minimum", "Decay prevents underfitting", "Neither is needed with Adam"], "correct": 1 }
+    },
+    {
+      "id": "dl-020",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["initialization"],
+      "q": "Why does weight initialization matter, and what are Xavier and He?",
+      "a_short": "Bad init makes activation variance grow or shrink with depth, causing explosion or vanishing before training even starts. Xavier targets tanh/sigmoid; He targets ReLU.",
+      "a_full": "Xavier uses variance 1/fan_avg to keep forward and backward variance stable. He uses 2/fan_in because ReLU zeroes half the activations, halving the variance. Zero init is fatal — every unit in a layer gets the same gradient and the layer never breaks symmetry.",
+      "mcq": { "options": ["Init doesn't matter with BatchNorm", "Xavier for tanh/sigmoid, He (2/fan_in) for ReLU to preserve activation variance", "Always initialize to zero", "He is for sigmoid"], "correct": 1 }
+    },
+    {
+      "id": "dl-021",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["softmax", "loss"],
+      "q": "Why are softmax and cross-entropy fused in frameworks?",
+      "a_short": "Numerical stability. Computing them together lets the implementation use the log-sum-exp trick and gives a clean `(ŷ − y)` gradient.",
+      "a_full": "Separate softmax can overflow on large logits and underflow to log(0) = −inf. That's why PyTorch's `CrossEntropyLoss` takes raw logits, not probabilities — passing softmax output into it is a very common bug that silently degrades training.",
+      "mcq": { "options": ["To save memory only", "Numerical stability via log-sum-exp, plus a simple gradient", "Because softmax has no gradient", "To support multi-label tasks"], "correct": 1 }
+    },
+    {
+      "id": "dl-022",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["transfer-learning"],
+      "q": "How do you decide what to freeze when fine-tuning?",
+      "a_short": "Small and similar dataset → freeze most, train the head. Large and different → fine-tune everything. The middle cases unfreeze progressively from the top.",
+      "a_full": "Early layers learn generic features (edges, textures) that transfer across domains; later layers are task-specific. Use a much lower learning rate for pretrained layers than for the new head — often 10× lower, or discriminative rates per layer group.",
+      "mcq": { "options": ["Always freeze everything", "Depends on dataset size and domain similarity; freeze more when data is small and similar", "Always fine-tune everything", "Freeze the final layers"], "correct": 1 }
+    },
+    {
+      "id": "dl-023",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["augmentation"],
+      "q": "Why is data augmentation effectively a regularizer?",
+      "a_short": "It expands the effective training distribution and encodes invariances you want the model to have, so it can't memorize exact pixels.",
+      "a_full": "Choose augmentations that preserve the label: horizontal flip is fine for natural images, fatal for digit recognition. Mixup and CutMix blend samples and labels. For audio, SpecAugment masks time and frequency bands. The augmentation set is a statement about which transformations shouldn't change the answer.",
+      "mcq": { "options": ["It speeds up convergence", "It expands the effective training distribution and encodes desired invariances", "It reduces model size", "It replaces the validation set"], "correct": 1 }
+    },
+    {
+      "id": "dl-024",
+      "type": "concept",
+      "difficulty": 4,
+      "tags": ["optimization", "loss-landscape"],
+      "q": "Why aren't local minima the main problem in deep networks?",
+      "a_short": "In very high dimensions, critical points are overwhelmingly saddle points, not local minima — all dimensions curving upward simultaneously is vanishingly unlikely.",
+      "a_full": "Most local minima that do exist have loss close to the global minimum. The real obstacles are saddle points with long flat plateaus, and sharp minima that generalize poorly. Momentum and gradient noise help escape saddles; that's part of why SGD's noise is useful rather than merely tolerated.",
+      "mcq": { "options": ["Local minima are the main obstacle", "Critical points in high dimensions are mostly saddle points", "Deep networks are convex", "Gradient descent always finds the global minimum"], "correct": 1 }
+    },
+    {
+      "id": "dl-025",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["training", "memory"],
+      "q": "You're out of GPU memory mid-training. What are your options, cheapest first?",
+      "a_short": "Reduce batch size with gradient accumulation, switch to mixed precision, enable gradient checkpointing, then shard or offload.",
+      "a_full": "Gradient accumulation keeps the effective batch size while shrinking the resident one. AMP (fp16/bf16) roughly halves activation memory and speeds up tensor-core math. Gradient checkpointing drops stored activations and recomputes them in the backward pass — about 30% slower for a large memory win. ZeRO/FSDP shards optimizer state and parameters across devices.",
+      "mcq": { "options": ["Only buy a bigger GPU", "Gradient accumulation, mixed precision, gradient checkpointing, then sharding", "Reduce the dataset", "Disable the optimizer"], "correct": 1 }
+    },
+    {
+      "id": "dl-026",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["pytorch", "gotcha"],
+      "q": "What's wrong with this training loop?",
+      "code": "for x, y in loader:\n    out = model(x)\n    loss = criterion(out, y)\n    loss.backward()\n    optimizer.step()",
+      "a_short": "Missing `optimizer.zero_grad()` — PyTorch accumulates gradients, so each step uses the sum of all previous batches' gradients.",
+      "a_full": "The accumulation behaviour is deliberate: it's what makes gradient accumulation and multi-loss setups possible. But forgetting to clear it makes training diverge in a way that looks like a bad learning rate. Also missing here: `model.train()`, and `torch.no_grad()` around any validation pass.",
+      "mcq": { "options": ["loss.backward() is in the wrong place", "Missing optimizer.zero_grad()", "criterion should come first", "Nothing is wrong"], "correct": 1 }
+    },
+    {
+      "id": "dl-027",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["debugging"],
+      "q": "Training loss isn't decreasing at all. What's your debugging order?",
+      "a_short": "Overfit a single batch first. If it can't reach near-zero loss on 8 samples, the bug is in the model, loss or data pipeline — not the hyperparameters.",
+      "a_full": "Then check, in order: labels aligned with inputs, learning rate within a few orders of magnitude, logits not softmaxed before CrossEntropyLoss, `zero_grad` present, gradients actually flowing (print norms per layer), and normalization statistics sane. The single-batch overfit test isolates 'can it learn at all' from 'is it learning well'.",
+      "mcq": { "options": ["Increase model size first", "Overfit a single batch to separate bugs from tuning problems", "Train for more epochs", "Add more data"], "correct": 1 }
+    }
+  ]
+}

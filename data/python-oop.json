@@ -1,0 +1,267 @@
+{
+  "section": "Python OOP",
+  "version": 1,
+  "items": [
+    {
+      "id": "oop-001",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["mro", "inheritance"],
+      "q": "What does Python's MRO determine, and which algorithm computes it?",
+      "a_short": "The order in which classes are searched for an attribute. It's computed by C3 linearization.",
+      "a_full": "C3 guarantees: a class precedes its parents, parent order is preserved, and the result is monotonic across subclasses. If no consistent order exists, the class statement itself raises `TypeError`. Inspect it with `Cls.__mro__`.",
+      "mcq": { "options": ["Depth-first left-to-right", "C3 linearization", "Alphabetical by class name", "Breadth-first"], "correct": 1 },
+      "asked_at": ["Qualcomm", "Amazon"]
+    },
+    {
+      "id": "oop-002",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["mro", "diamond"],
+      "q": "What prints?",
+      "code": "class A:\n    def who(self): return 'A'\nclass B(A):\n    def who(self): return 'B'\nclass C(A):\n    def who(self): return 'C'\nclass D(B, C): pass\n\nprint(D().who())\nprint([c.__name__ for c in D.__mro__])",
+      "a_short": "`B`, then `['D', 'B', 'C', 'A', 'object']`.",
+      "a_full": "Classic diamond. C3 puts B before C because of the base-class order in `class D(B, C)`, and A after both because a class must come after everything that inherits from it.",
+      "mcq": { "options": ["A", "B", "C", "TypeError"], "correct": 1 }
+    },
+    {
+      "id": "oop-003",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["super"],
+      "q": "What does `super()` actually do?",
+      "a_short": "It returns a proxy that dispatches to the next class in the MRO of `type(self)` — not necessarily the direct parent.",
+      "a_full": "This is why cooperative multiple inheritance works: every class in the chain calls `super().__init__(**kwargs)` and each one runs exactly once, in MRO order. Hard-coding `Parent.__init__(self, ...)` breaks that chain.",
+      "mcq": { "options": ["Calls the direct parent class", "Dispatches to the next class in the instance's MRO", "Calls object.__init__", "Creates a new instance"], "correct": 1 }
+    },
+    {
+      "id": "oop-004",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["dunder", "construction"],
+      "q": "`__new__` vs `__init__`.",
+      "a_short": "`__new__` allocates and returns the instance (a static method); `__init__` initializes an already-created instance and must return None.",
+      "a_full": "You only need `__new__` when subclassing immutables (`int`, `str`, `tuple`) or implementing singletons/caching. If `__new__` returns an object that isn't an instance of the class, `__init__` is never called.",
+      "mcq": { "options": ["__init__ creates, __new__ initializes", "__new__ creates and returns the instance, __init__ initializes it", "They are aliases", "__new__ runs after __init__"], "correct": 1 }
+    },
+    {
+      "id": "oop-005",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["property"],
+      "q": "What problem does `@property` solve?",
+      "a_short": "It lets you add validation or computation behind what looks like plain attribute access, without changing the public API.",
+      "a_full": "Python has no need for Java-style getters up front: start with a public attribute, and convert to a property later if you need logic. The setter is declared as `@name.setter`.",
+      "a_code": "class Temp:\n    def __init__(self, c): self.celsius = c\n    @property\n    def fahrenheit(self): return self.celsius * 9/5 + 32\n    @fahrenheit.setter\n    def fahrenheit(self, v): self.celsius = (v - 32) * 5/9",
+      "mcq": { "options": ["It makes attributes private", "It adds logic behind attribute-style access", "It speeds up attribute lookup", "It enforces types"], "correct": 1 }
+    },
+    {
+      "id": "oop-006",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["classmethod", "staticmethod"],
+      "q": "`@classmethod` vs `@staticmethod`.",
+      "a_short": "`classmethod` receives the class as first argument (`cls`); `staticmethod` receives nothing special and is just a function living in the class namespace.",
+      "a_full": "Use `classmethod` for alternative constructors (`Date.from_string(...)`) — it works correctly with subclasses because `cls` is the actual subclass. Use `staticmethod` for a helper that is logically grouped with the class but needs neither instance nor class.",
+      "mcq": { "options": ["Both receive cls", "classmethod gets cls, staticmethod gets nothing", "staticmethod gets self", "They are identical"], "correct": 1 }
+    },
+    {
+      "id": "oop-007",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["slots", "memory"],
+      "q": "What does `__slots__` do and what does it cost?",
+      "a_short": "It replaces the per-instance `__dict__` with a fixed array of descriptors — much less memory and slightly faster access, but no arbitrary new attributes.",
+      "a_full": "Typical saving is 40-50% per instance, which matters at millions of objects. Costs: no dynamic attributes, no `__weakref__` unless listed, and multiple inheritance from two slotted classes with non-empty slots fails.",
+      "mcq": { "options": ["Makes attributes private", "Removes per-instance __dict__ to save memory", "Enables multiple inheritance", "Caches method lookups"], "correct": 1 }
+    },
+    {
+      "id": "oop-008",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["dunder", "repr"],
+      "q": "`__str__` vs `__repr__`.",
+      "a_short": "`__str__` is the readable form for end users; `__repr__` is the unambiguous form for developers, ideally valid Python that recreates the object.",
+      "a_full": "`print()` and `str()` use `__str__`, falling back to `__repr__`. The REPL, containers and debuggers always use `__repr__` — which is why implementing only `__str__` leaves you with `<obj at 0x7f...>` inside a list.",
+      "mcq": { "options": ["__repr__ is for users, __str__ for developers", "__str__ is readable for users, __repr__ is unambiguous for developers", "They must be identical", "__repr__ is deprecated"], "correct": 1 }
+    },
+    {
+      "id": "oop-009",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["hash", "eq"],
+      "q": "What's the contract between `__eq__` and `__hash__`?",
+      "a_short": "If `a == b` then `hash(a) == hash(b)`. Defining `__eq__` sets `__hash__` to None, making the class unhashable unless you define it too.",
+      "a_full": "Hash the same tuple of fields you compare on. Mutating a field used in the hash while the object sits in a dict or set corrupts the container — that's why hashable objects should be immutable in practice.",
+      "mcq": { "options": ["No relationship", "Equal objects must have equal hashes; defining __eq__ clears __hash__", "Equal hashes imply equal objects", "__hash__ must be unique per object"], "correct": 1 },
+      "asked_at": ["Google"]
+    },
+    {
+      "id": "oop-010",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["class-attribute", "gotcha"],
+      "q": "What prints?",
+      "code": "class Dog:\n    tricks = []\n    def __init__(self, name): self.name = name\n    def learn(self, t): self.tricks.append(t)\n\na, b = Dog('a'), Dog('b')\na.learn('sit')\nprint(b.tricks)",
+      "a_short": "`['sit']` — `tricks` is a class attribute shared by every instance.",
+      "a_full": "Same trap as the mutable default argument. Mutable state belongs in `__init__` as `self.tricks = []`. Note that `self.tricks.append` mutates the shared class attribute, while `self.tricks = [...]` would create an instance attribute that shadows it.",
+      "mcq": { "options": ["[]", "['sit']", "AttributeError", "None"], "correct": 1 }
+    },
+    {
+      "id": "oop-011",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["abc"],
+      "q": "What does `abc.ABC` with `@abstractmethod` give you?",
+      "a_short": "Instantiating a subclass that hasn't implemented every abstract method raises `TypeError` at creation time.",
+      "a_full": "It turns a silent runtime failure into a loud, early one, and documents the required interface. ABCs also support `register()` for virtual subclasses that satisfy the interface without inheriting.",
+      "mcq": { "options": ["Runtime type checking of arguments", "TypeError when instantiating an incomplete subclass", "Automatic method generation", "Faster dispatch"], "correct": 1 }
+    },
+    {
+      "id": "oop-012",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["design"],
+      "q": "Composition vs inheritance — what's the default advice and why?",
+      "a_short": "Prefer composition. Inheritance couples you to a parent's implementation; composition lets you swap behaviour at runtime.",
+      "a_full": "Inherit only on a genuine is-a relationship where the subclass is substitutable for the parent (Liskov). The classic failure is inheriting for code reuse — `Stack(list)` inherits `insert` and `__getitem__`, which break the stack's own invariants.",
+      "mcq": { "options": ["Always inherit, it's less code", "Prefer composition; inherit only for true is-a substitutability", "They're equivalent", "Composition is only for testing"], "correct": 1 }
+    },
+    {
+      "id": "oop-013",
+      "type": "concept",
+      "difficulty": 4,
+      "tags": ["descriptors"],
+      "q": "What is a descriptor?",
+      "a_short": "Any object defining `__get__`, `__set__` or `__delete__`, used as a class attribute to intercept attribute access.",
+      "a_full": "Descriptors are the machinery behind `property`, `classmethod`, `staticmethod` and bound methods. A data descriptor (defines `__set__` or `__delete__`) takes priority over the instance `__dict__`; a non-data descriptor does not.",
+      "mcq": { "options": ["A docstring convention", "An object defining __get__/__set__/__delete__ used as a class attribute", "A type annotation", "A metaclass hook"], "correct": 1 }
+    },
+    {
+      "id": "oop-014",
+      "type": "concept",
+      "difficulty": 4,
+      "tags": ["metaclass"],
+      "q": "What is a metaclass?",
+      "a_short": "The class of a class. `type` is the default — it controls how a class object is built.",
+      "a_full": "A metaclass hooks class creation itself: registering subclasses, validating that required methods exist, injecting attributes. Most real cases are better solved with `__init_subclass__` or a class decorator — reach for a metaclass only when you need to control creation of the class object.",
+      "mcq": { "options": ["A class with only static methods", "The class of a class, controlling class creation", "An abstract base class", "A class defined inside another class"], "correct": 1 }
+    },
+    {
+      "id": "oop-015",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["name-mangling"],
+      "q": "What happens?",
+      "code": "class A:\n    def __init__(self): self.__x = 1\n\na = A()\nprint(a.__x)",
+      "a_short": "`AttributeError` — the name was mangled to `_A__x`.",
+      "a_full": "A leading double underscore triggers name mangling: inside class `A`, `__x` becomes `_A__x`. It exists to avoid accidental clashes in subclasses, not to enforce privacy — `a._A__x` works fine. A single underscore is the real 'internal' convention.",
+      "mcq": { "options": ["Prints 1", "AttributeError", "Prints None", "SyntaxError"], "correct": 1 }
+    },
+    {
+      "id": "oop-016",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["duck-typing", "eafp"],
+      "q": "What does EAFP mean in Python, versus LBYL?",
+      "a_short": "Easier to Ask Forgiveness than Permission — try the operation and catch the exception, rather than checking conditions first (Look Before You Leap).",
+      "a_full": "EAFP avoids time-of-check/time-of-use races and is usually faster when the happy path dominates, since Python exceptions are cheap to set up and only costly when raised. `d.get(k, default)` and `try/except KeyError` both beat `if k in d: d[k]`.",
+      "mcq": { "options": ["Check types before acting", "Try the operation and handle the exception", "Always validate inputs with asserts", "Use abstract base classes"], "correct": 1 }
+    },
+    {
+      "id": "oop-017",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["dunder", "callable"],
+      "q": "What does implementing `__call__` give a class?",
+      "a_short": "Instances become callable like functions — `obj(x)` runs `obj.__call__(x)`.",
+      "a_full": "Useful for stateful function-like objects: a model wrapper, a configured transform, a rate limiter. PyTorch's `nn.Module.__call__` is exactly this — it runs hooks and then `forward`, which is why you call `model(x)` instead of `model.forward(x)`.",
+      "mcq": { "options": ["It makes the class iterable", "Instances become callable", "It defines equality", "It enables with-blocks"], "correct": 1 }
+    },
+    {
+      "id": "oop-018",
+      "type": "coding",
+      "difficulty": 3,
+      "tags": ["iterator", "protocol"],
+      "q": "Write a class that implements the iterator protocol for a countdown.",
+      "a_short": "Implement `__iter__` returning self and `__next__` raising `StopIteration` when done.",
+      "a_full": "A generator does the same thing in three lines — classes are worth it only when you need extra state or methods alongside iteration.",
+      "a_code": "class Countdown:\n    def __init__(self, n): self.n = n\n    def __iter__(self): return self\n    def __next__(self):\n        if self.n <= 0:\n            raise StopIteration\n        self.n -= 1\n        return self.n + 1\n\n# generator equivalent\ndef countdown(n):\n    while n > 0:\n        yield n\n        n -= 1",
+      "mcq": { "options": ["__iter__ and __next__", "__getitem__ only", "__call__ and __len__", "__enter__ and __exit__"], "correct": 0 }
+    },
+    {
+      "id": "oop-019",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["dunder", "attribute-access"],
+      "q": "`__getattr__` vs `__getattribute__`.",
+      "a_short": "`__getattribute__` intercepts every attribute access; `__getattr__` runs only when normal lookup fails.",
+      "a_full": "`__getattr__` is the safe one — use it for lazy attributes and proxies. `__getattribute__` is easy to get wrong: any attribute access inside it recurses, so you must delegate via `super().__getattribute__(name)`.",
+      "mcq": { "options": ["__getattr__ runs on every access", "__getattribute__ runs on every access; __getattr__ only on failure", "They are the same", "__getattr__ only works on classes"], "correct": 1 }
+    },
+    {
+      "id": "oop-020",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["isinstance", "type"],
+      "q": "`isinstance(x, C)` vs `type(x) is C`.",
+      "a_short": "`isinstance` honours subclasses and ABC registration; `type(x) is C` demands an exact match.",
+      "a_full": "`isinstance` is almost always what you want — `type(x) is C` rejects subclasses and breaks Liskov substitution. `isinstance` also accepts a tuple: `isinstance(x, (int, float))`.",
+      "mcq": { "options": ["Identical behaviour", "isinstance accepts subclasses; type is requires an exact match", "type is accepts subclasses", "isinstance is deprecated"], "correct": 1 }
+    },
+    {
+      "id": "oop-021",
+      "type": "coding",
+      "difficulty": 3,
+      "tags": ["patterns", "singleton"],
+      "q": "How would you implement a singleton in Python?",
+      "a_short": "Usually you wouldn't — a module is already a singleton. If you must, override `__new__` to cache the instance.",
+      "a_full": "Module-level objects are created once on first import and cached in `sys.modules`, which gives you the singleton semantics with none of the machinery. The `__new__` approach also has a trap: `__init__` still runs on every call, so guard it.",
+      "a_code": "class Config:\n    _inst = None\n    def __new__(cls, *a, **kw):\n        if cls._inst is None:\n            cls._inst = super().__new__(cls)\n        return cls._inst",
+      "mcq": { "options": ["Subclass ABC", "Cache the instance in __new__ (or just use a module)", "Use @staticmethod", "Use __slots__"], "correct": 1 }
+    },
+    {
+      "id": "oop-022",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["patterns", "mixins"],
+      "q": "What is a mixin and how does it differ from a base class?",
+      "a_short": "A small class providing one slice of behaviour, never instantiated alone, combined into a class via multiple inheritance.",
+      "a_full": "Mixins should not define `__init__` state, should target a narrow capability (`JSONSerializableMixin`, `LoggingMixin`), and go to the left of the main base so their methods win in the MRO.",
+      "mcq": { "options": ["A class with only abstract methods", "A small behaviour-only class combined via multiple inheritance", "A class with no methods", "A metaclass variant"], "correct": 1 }
+    },
+    {
+      "id": "oop-023",
+      "type": "coding",
+      "difficulty": 2,
+      "tags": ["context-manager"],
+      "q": "Write a context manager class that times the block.",
+      "a_short": "Implement `__enter__` to record the start and `__exit__` to compute the elapsed time.",
+      "a_code": "import time\n\nclass Timer:\n    def __enter__(self):\n        self.t0 = time.perf_counter()\n        return self\n    def __exit__(self, *exc):\n        self.elapsed = time.perf_counter() - self.t0\n        return False   # don't suppress exceptions\n\nwith Timer() as t:\n    heavy()\nprint(t.elapsed)",
+      "a_full": "Returning False (or None) from `__exit__` lets exceptions propagate — returning True silently swallows them, which is almost never what you want.",
+      "mcq": { "options": ["__start__ / __stop__", "__enter__ / __exit__", "__open__ / __close__", "__init__ / __del__"], "correct": 1 }
+    },
+    {
+      "id": "oop-024",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["encapsulation"],
+      "q": "How is privacy expressed in Python?",
+      "a_short": "By convention only: `_name` means internal, `__name` triggers name mangling. Nothing is truly private.",
+      "a_full": "`_name` is a signal to other developers and excludes the name from `from module import *`. `__name` mangles to `_Class__name` to prevent accidental override in subclasses. Both are deliberately bypassable — Python trusts the caller.",
+      "mcq": { "options": ["private/protected keywords", "Convention: _name internal, __name mangled; nothing is enforced", "Only via properties", "__slots__ enforces privacy"], "correct": 1 }
+    },
+    {
+      "id": "oop-025",
+      "type": "predict_output",
+      "difficulty": 4,
+      "tags": ["super", "mro", "cooperative"],
+      "q": "What prints?",
+      "code": "class Base:\n    def __init__(self): print('Base')\nclass L(Base):\n    def __init__(self):\n        print('L'); super().__init__()\nclass R(Base):\n    def __init__(self):\n        print('R'); super().__init__()\nclass D(L, R):\n    def __init__(self):\n        print('D'); super().__init__()\nD()",
+      "a_short": "`D`, `L`, `R`, `Base` — each class runs exactly once, in MRO order.",
+      "a_full": "This is cooperative multiple inheritance working correctly. Inside `L`, `super()` resolves to `R`, not `Base`, because the MRO of `D` is [D, L, R, Base, object]. Had `L` called `Base.__init__(self)` directly, `R` would never run.",
+      "mcq": { "options": ["D L Base", "D L R Base", "D L Base R Base", "D R L Base"], "correct": 1 },
+      "asked_at": ["Amazon"]
+    }
+  ]
+}

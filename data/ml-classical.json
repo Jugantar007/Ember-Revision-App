@@ -1,0 +1,278 @@
+{
+  "section": "Classical ML",
+  "version": 1,
+  "items": [
+    {
+      "id": "mlc-001",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["bias-variance"],
+      "q": "Explain the bias-variance tradeoff.",
+      "a_short": "Bias is error from wrong assumptions (underfitting); variance is sensitivity to the particular training sample (overfitting). Total error = bias² + variance + irreducible noise.",
+      "a_full": "Increasing model capacity lowers bias and raises variance. Diagnose from the gap: high train error means high bias; low train error with high validation error means high variance. More data reduces variance but does nothing for bias.",
+      "mcq": { "options": ["Bias is overfitting, variance is underfitting", "Bias is underfitting, variance is overfitting; error = bias² + variance + noise", "They always increase together", "Variance is irreducible"], "correct": 1 },
+      "asked_at": ["Qualcomm", "Amazon"]
+    },
+    {
+      "id": "mlc-002",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["regularization", "l1", "l2"],
+      "q": "L1 vs L2 regularization — what's the practical difference?",
+      "a_short": "L1 (Lasso) drives weights exactly to zero, doing feature selection. L2 (Ridge) shrinks weights smoothly toward zero but rarely to zero.",
+      "a_full": "Geometrically, L1's diamond constraint region has corners on the axes, so the optimum often lands on one. L2's circular region doesn't. L1 handles correlated features badly — it picks one arbitrarily; elastic net (L1+L2) fixes that.",
+      "mcq": { "options": ["L2 produces sparse weights", "L1 produces sparse weights and selects features; L2 shrinks smoothly", "They are equivalent", "L1 is only for classification"], "correct": 1 }
+    },
+    {
+      "id": "mlc-003",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["metrics", "precision", "recall"],
+      "q": "Precision vs recall — define both and say when each dominates.",
+      "a_short": "Precision = TP/(TP+FP), 'of what I flagged, how much was right'. Recall = TP/(TP+FN), 'of what was there, how much did I catch'.",
+      "a_full": "Optimize recall when a miss is expensive — disease screening, fraud, defect detection. Optimize precision when a false alarm is expensive — spam filtering, automated account bans. F1 is their harmonic mean; use Fβ to weight one over the other.",
+      "mcq": { "options": ["Precision = TP/(TP+FN)", "Precision = TP/(TP+FP), Recall = TP/(TP+FN)", "They are the same metric", "Recall = TN/(TN+FP)"], "correct": 1 }
+    },
+    {
+      "id": "mlc-004",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["metrics", "auc"],
+      "q": "ROC-AUC vs PR-AUC — when does the choice matter?",
+      "a_short": "On heavily imbalanced data. ROC-AUC uses the false positive rate, whose large denominator (all negatives) hides a flood of false positives; PR-AUC exposes it.",
+      "a_full": "With 1% positives, a model flagging 1000 false positives out of 99,000 negatives barely moves FPR but wrecks precision. ROC-AUC also has a clean interpretation: the probability a random positive is ranked above a random negative.",
+      "mcq": { "options": ["They are interchangeable", "PR-AUC is more informative under heavy class imbalance", "ROC-AUC is better for imbalance", "PR-AUC only works for regression"], "correct": 1 }
+    },
+    {
+      "id": "mlc-005",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["validation", "cv"],
+      "q": "Why k-fold cross-validation instead of a single split?",
+      "a_short": "It averages performance over k splits, so the estimate doesn't depend on one lucky or unlucky partition — and every sample is used for validation once.",
+      "a_full": "k=5 or 10 is standard. Use stratified folds for imbalanced classification to preserve class ratios. For time series, use forward-chaining splits — random folds leak the future into the past.",
+      "mcq": { "options": ["It trains faster", "It gives a lower-variance performance estimate and uses all data for validation", "It prevents overfitting entirely", "It removes the need for a test set"], "correct": 1 }
+    },
+    {
+      "id": "mlc-006",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["leakage"],
+      "q": "What is data leakage, and name three ways it sneaks in.",
+      "a_short": "Information from outside the training set influencing the model, producing great validation scores and bad production performance.",
+      "a_full": "Three common routes: (1) fitting a scaler or imputer on the full dataset before splitting; (2) features computed using future information relative to the prediction time; (3) duplicate or near-duplicate rows straddling the train/test boundary. Fit every transform inside the pipeline, on the training fold only.",
+      "mcq": { "options": ["Memory leak during training", "Information from outside the training set inflating validation scores", "Losing data during preprocessing", "Overfitting to the test set"], "correct": 1 },
+      "asked_at": ["Amazon"]
+    },
+    {
+      "id": "mlc-007",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["imbalance"],
+      "q": "How do you handle severe class imbalance?",
+      "a_short": "Change the metric first, then try class weights, then resampling (SMOTE / undersampling), then threshold tuning on the validation set.",
+      "a_full": "Accuracy is useless at 99:1 — a constant predictor scores 99%. Class weights in the loss are usually the cheapest fix. SMOTE synthesizes minority points but can create implausible samples in high dimensions. Never resample the validation or test set.",
+      "mcq": { "options": ["Always oversample the minority class", "Fix the metric, then class weights, resampling, and threshold tuning", "Collect no more data", "Use accuracy as the metric"], "correct": 1 }
+    },
+    {
+      "id": "mlc-008",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["trees", "splitting"],
+      "q": "How does a decision tree choose a split?",
+      "a_short": "It picks the feature and threshold that maximally reduce impurity — Gini or entropy for classification, variance for regression.",
+      "a_full": "Gini = 1 − Σp², entropy = −Σp log p. They rarely disagree; Gini is slightly cheaper since there's no logarithm. The greedy, locally-optimal search is why single trees are unstable — a small data change flips an early split and the whole tree below it.",
+      "mcq": { "options": ["Randomly", "By maximizing impurity reduction (Gini/entropy/variance)", "By minimizing tree depth", "By feature correlation only"], "correct": 1 }
+    },
+    {
+      "id": "mlc-009",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["ensembles", "bagging", "boosting"],
+      "q": "Bagging vs boosting.",
+      "a_short": "Bagging trains independent models on bootstrap samples in parallel and averages them — it reduces variance. Boosting trains models sequentially, each correcting the previous one's errors — it reduces bias.",
+      "a_full": "Random Forest is bagging plus random feature subsets at each split, which decorrelates the trees further. Gradient boosting fits each new tree to the residuals (really, the negative gradient) of the current ensemble. Boosting generally scores higher but overfits if unregularized and can't be parallelized across trees.",
+      "mcq": { "options": ["Bagging is sequential, boosting is parallel", "Bagging is parallel and cuts variance; boosting is sequential and cuts bias", "Both reduce bias only", "They produce identical models"], "correct": 1 }
+    },
+    {
+      "id": "mlc-010",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["ensembles"],
+      "q": "Random Forest vs Gradient Boosting — how do you choose?",
+      "a_short": "RF is robust, hard to overfit, parallel and needs little tuning. GBM usually wins on accuracy but needs careful tuning of learning rate, depth and number of trees.",
+      "a_full": "RF uses deep, low-bias, high-variance trees averaged down. GBM uses shallow, high-bias trees (depth 3-6) boosted into a low-bias ensemble. For tabular data, XGBoost/LightGBM/CatBoost still beat deep nets more often than not.",
+      "mcq": { "options": ["RF is sequential, GBM is parallel", "RF: robust and parallel with little tuning; GBM: higher accuracy but tuning-sensitive", "They are the same algorithm", "GBM uses deep trees, RF uses shallow"], "correct": 1 }
+    },
+    {
+      "id": "mlc-011",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["svm", "kernel"],
+      "q": "What is the kernel trick?",
+      "a_short": "Computing inner products in a high-dimensional feature space without ever constructing the coordinates in that space.",
+      "a_full": "SVM's dual formulation only needs dot products between samples, so replacing `x·y` with `K(x, y)` implicitly maps into a richer space. The RBF kernel corresponds to an infinite-dimensional space. Cost: training is O(n²) to O(n³), so SVMs don't scale past roughly 100k samples.",
+      "mcq": { "options": ["Reducing dimensionality before training", "Computing inner products in a high-dim space without explicit mapping", "A regularization method", "A sampling technique"], "correct": 1 }
+    },
+    {
+      "id": "mlc-012",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["logistic-regression", "loss"],
+      "q": "Why is logistic regression trained with cross-entropy rather than MSE?",
+      "a_short": "MSE combined with a sigmoid is non-convex in the weights and its gradient vanishes when predictions are confidently wrong. Cross-entropy is convex and keeps a strong gradient there.",
+      "a_full": "With cross-entropy the gradient simplifies to `(ŷ − y)·x` — the error itself scales the update. With MSE you pick up an extra σ'(z) factor that goes to zero in saturation, so a badly wrong, confident prediction barely learns.",
+      "mcq": { "options": ["MSE is slower to compute", "MSE+sigmoid is non-convex and its gradient vanishes when confidently wrong", "Cross-entropy needs less memory", "MSE cannot handle two classes"], "correct": 1 }
+    },
+    {
+      "id": "mlc-013",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["naive-bayes"],
+      "q": "What's 'naive' about Naive Bayes, and why does it work anyway?",
+      "a_short": "It assumes features are conditionally independent given the class — usually false, yet the argmax over classes is often still right.",
+      "a_full": "The probability estimates are badly calibrated, but classification only needs the correct ranking. It's fast, needs little data, and remains a strong baseline for text. Laplace smoothing handles unseen feature/class combinations that would otherwise zero out the whole product.",
+      "mcq": { "options": ["It assumes a Gaussian distribution", "It assumes conditional independence of features given the class", "It ignores priors", "It uses no probability"], "correct": 1 }
+    },
+    {
+      "id": "mlc-014",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["knn"],
+      "q": "What are KNN's main costs?",
+      "a_short": "No training, but prediction is O(n·d) per query, it stores the entire dataset, and it degrades badly in high dimensions.",
+      "a_full": "It also demands feature scaling, since distance is dominated by large-range features. KD-trees help up to roughly 20 dimensions; beyond that approximate methods (HNSW, FAISS) are the practical answer.",
+      "mcq": { "options": ["Expensive training, cheap inference", "No training, but O(n·d) inference and full dataset storage", "Needs no scaling", "Works best in high dimensions"], "correct": 1 }
+    },
+    {
+      "id": "mlc-015",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["clustering", "kmeans"],
+      "q": "What are K-means' key limitations?",
+      "a_short": "You must pick k, it assumes spherical equal-size clusters, it's sensitive to initialization and outliers, and it only finds a local optimum.",
+      "a_full": "k-means++ fixes initialization. For k, use the elbow on inertia or the silhouette score. Non-spherical clusters need DBSCAN (density-based, finds k itself, handles noise) or a Gaussian mixture, which allows elliptical clusters and soft assignments.",
+      "mcq": { "options": ["It finds the global optimum", "Requires k, assumes spherical clusters, sensitive to init and outliers", "It handles any cluster shape", "It needs no distance metric"], "correct": 1 }
+    },
+    {
+      "id": "mlc-016",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["pca", "dimensionality"],
+      "q": "What does PCA actually compute?",
+      "a_short": "Orthogonal directions of maximum variance — the eigenvectors of the covariance matrix, ordered by eigenvalue.",
+      "a_full": "You must standardize first or large-scale features dominate. PCA is unsupervised, so a discarded low-variance direction can be exactly the one that separates your classes — LDA is the supervised alternative. Components are linear combinations, which destroys interpretability.",
+      "mcq": { "options": ["Directions of maximum class separation", "Orthogonal directions of maximum variance (covariance eigenvectors)", "A clustering of features", "A nonlinear embedding"], "correct": 1 }
+    },
+    {
+      "id": "mlc-017",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["preprocessing", "scaling"],
+      "q": "Which models need feature scaling and which don't?",
+      "a_short": "Need it: anything distance-based or gradient-based — KNN, SVM, k-means, PCA, linear/logistic regression, neural nets. Don't: tree-based models.",
+      "a_full": "Trees split on thresholds within a single feature, so monotonic rescaling changes nothing. Regularization also makes scaling mandatory for linear models — otherwise the penalty hits large-scale features harder purely because of their units.",
+      "mcq": { "options": ["All models need scaling", "Distance- and gradient-based models need it; trees don't", "Only trees need scaling", "No model needs scaling"], "correct": 1 }
+    },
+    {
+      "id": "mlc-018",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["encoding"],
+      "q": "One-hot vs label encoding for categorical features.",
+      "a_short": "Label encoding invents a false ordinal relationship; one-hot doesn't, but explodes dimensionality on high-cardinality features.",
+      "a_full": "Tree models tolerate label encoding since they can split the integer range arbitrarily. For high cardinality, use target/mean encoding (compute it inside the CV fold or you leak), hashing, or learned embeddings.",
+      "mcq": { "options": ["They are equivalent", "Label encoding implies a false order; one-hot avoids it but adds dimensions", "One-hot implies order", "Label encoding is always better"], "correct": 1 }
+    },
+    {
+      "id": "mlc-019",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["preprocessing", "missing-data"],
+      "q": "How do you handle missing values?",
+      "a_short": "First ask why they're missing. Then: drop, impute (mean/median/model-based), or use a model that handles them natively.",
+      "a_full": "Missingness is often informative — add a binary `was_missing` indicator alongside the imputed value. Median beats mean under skew. XGBoost and LightGBM learn a default direction for missing values at each split. Always fit the imputer on the training fold only.",
+      "mcq": { "options": ["Always drop the rows", "Investigate the mechanism, then drop/impute/use a native-handling model, and flag missingness", "Always fill with zero", "Always fill with the mean"], "correct": 1 }
+    },
+    {
+      "id": "mlc-020",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["validation", "splits"],
+      "q": "Why three splits — train, validation and test?",
+      "a_short": "Train fits parameters, validation selects hyperparameters, test gives an unbiased final estimate. Choosing on the test set contaminates it.",
+      "a_full": "Every decision made by looking at a set makes that set optimistic. After enough rounds of tuning against validation, the validation score itself is inflated — which is why the test set must be touched once, at the end.",
+      "mcq": { "options": ["Only two splits are needed", "Train fits, validation tunes, test gives an unbiased final estimate", "Test is for early stopping", "Validation is optional"], "correct": 1 }
+    },
+    {
+      "id": "mlc-021",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["curse-of-dimensionality"],
+      "q": "What is the curse of dimensionality?",
+      "a_short": "As dimensions grow, data becomes sparse and distances between points converge, so 'nearest neighbour' stops being meaningful.",
+      "a_full": "The volume needed to capture a fixed fraction of the data grows exponentially with d. The ratio of nearest to farthest distance tends to 1, which breaks KNN, k-means and RBF kernels. Remedies: feature selection, PCA, embeddings, or more data (usually infeasible).",
+      "mcq": { "options": ["Training gets slower only", "Data becomes sparse and distance metrics lose meaning", "Memory usage grows linearly", "Models become more accurate"], "correct": 1 }
+    },
+    {
+      "id": "mlc-022",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["optimization", "gradient-descent"],
+      "q": "Batch vs mini-batch vs stochastic gradient descent.",
+      "a_short": "Batch uses all data per step (stable, slow, memory-heavy); SGD uses one sample (noisy, fast, can escape shallow minima); mini-batch is the practical middle.",
+      "a_full": "Mini-batch sizes of 32-256 hit the sweet spot for hardware utilization. The gradient noise in SGD acts as a mild regularizer. Very large batches need a scaled learning rate plus warmup, or they generalize worse.",
+      "mcq": { "options": ["Batch is noisiest", "Batch: all data, stable/slow. SGD: one sample, noisy/fast. Mini-batch: the practical middle", "SGD uses all data", "Mini-batch is always worse"], "correct": 1 }
+    },
+    {
+      "id": "mlc-023",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["generative", "discriminative"],
+      "q": "Generative vs discriminative models.",
+      "a_short": "Generative models P(x, y) and can sample new data; discriminative models P(y | x) — only the decision boundary.",
+      "a_full": "Naive Bayes, GMM, VAE, diffusion models are generative. Logistic regression, SVM, most classifier networks are discriminative. Discriminative usually wins on pure classification accuracy with enough data; generative needs less data and handles missing features more gracefully.",
+      "mcq": { "options": ["Generative models P(y|x)", "Generative models P(x,y) and can sample; discriminative models P(y|x)", "They are the same", "Discriminative models can generate data"], "correct": 1 }
+    },
+    {
+      "id": "mlc-024",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["metrics", "regression"],
+      "q": "MAE vs MSE vs R² for regression — when does each fit?",
+      "a_short": "MAE is robust to outliers and in the target's units. MSE punishes large errors quadratically. R² is the fraction of variance explained, useful for comparing across datasets.",
+      "a_full": "MSE's gradient is smooth, which is why it's the training loss even when MAE is the reporting metric. Huber loss is the compromise: quadratic near zero, linear in the tails. R² can go negative when the model is worse than predicting the mean.",
+      "mcq": { "options": ["MSE is robust to outliers", "MAE is robust to outliers; MSE punishes large errors; R² is variance explained", "R² is always between 0 and 1", "MAE and MSE always rank models identically"], "correct": 1 }
+    },
+    {
+      "id": "mlc-025",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["hyperparameters", "tuning"],
+      "q": "Grid search vs random search vs Bayesian optimization.",
+      "a_short": "Grid is exhaustive and scales exponentially. Random covers each dimension better for the same budget. Bayesian builds a surrogate model to pick promising points.",
+      "a_full": "Bergstra and Bengio's result: with only a few hyperparameters actually mattering, random search finds good configurations far faster, because a grid wastes trials re-testing the same values of the important parameter. Optuna/Hyperopt implement the Bayesian approach plus early pruning of bad trials.",
+      "mcq": { "options": ["Grid search is the most efficient", "Random search beats grid at equal budget; Bayesian uses a surrogate to guide the search", "Bayesian search is exhaustive", "They perform identically"], "correct": 1 }
+    },
+    {
+      "id": "mlc-026",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["drift", "production"],
+      "q": "Your model's production accuracy drops a month after deployment. What are the suspects?",
+      "a_short": "Data drift (input distribution moved), concept drift (the x→y relationship moved), a broken feature pipeline, or training/serving skew.",
+      "a_full": "Check feature distributions against training first — pipeline bugs and upstream schema changes are more common than genuine drift. Training/serving skew is the silent one: a transform computed differently in the offline and online paths. Monitor input distributions, not just output accuracy, because labels often arrive late or never.",
+      "mcq": { "options": ["Only overfitting", "Data drift, concept drift, pipeline breakage, or training/serving skew", "The model file corrupted", "Always insufficient training data"], "correct": 1 }
+    },
+    {
+      "id": "mlc-027",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["overfitting"],
+      "q": "List the levers for reducing overfitting, roughly in order of what you'd try.",
+      "a_short": "More/better data, stronger augmentation, simpler model, regularization (L1/L2/dropout), early stopping, ensembling, cross-validated tuning.",
+      "a_full": "Start with data, because every other lever trades capacity for generalization while data gives you both. Early stopping is effectively free regularization. If the gap between train and validation is small but both are bad, you have a bias problem instead and should do the opposite.",
+      "mcq": { "options": ["Always increase model size", "More data, augmentation, simpler model, regularization, early stopping, ensembling", "Train for more epochs", "Remove the validation set"], "correct": 1 }
+    }
+  ]
+}

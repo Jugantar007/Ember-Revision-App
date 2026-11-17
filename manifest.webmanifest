@@ -1,0 +1,46 @@
+{
+  "name": "Ember — The Essence of a Recall",
+  "short_name": "Ember",
+  "description": "Spaced-repetition revision for Python, OOP, DSA, ML and Edge AI interview prep.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F9A39B",
+  "theme_color": "#F58693",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start today's mission",
+      "short_name": "Mission",
+      "url": "./index.html#/study/due",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Weak spots",
+      "short_name": "Weak spots",
+      "url": "./index.html#/weak",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

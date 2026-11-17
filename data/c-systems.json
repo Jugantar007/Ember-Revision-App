@@ -1,0 +1,174 @@
+{
+  "section": "C & Systems",
+  "version": 1,
+  "items": [
+    {
+      "id": "sys-001",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["memory", "stack-heap"],
+      "q": "Stack vs heap — what actually differs?",
+      "a_short": "Stack: automatic lifetime, LIFO, fast pointer-bump allocation, small and fixed size. Heap: manual lifetime, slower allocator, large, fragments.",
+      "a_full": "On an embedded target the stack is often only a few KB, so a large local array blows it with no MMU to catch the fault — it just corrupts adjacent memory. Many safety-critical embedded codebases forbid heap allocation entirely to make memory use statically provable.",
+      "mcq": { "options": ["Heap is faster to allocate", "Stack: automatic LIFO lifetime, fast, small. Heap: manual, slower, large, fragments", "Stack is unlimited", "They are the same memory region"], "correct": 1 }
+    },
+    {
+      "id": "sys-002",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["pointers", "sizeof"],
+      "q": "What does this print on a 64-bit machine?",
+      "code": "void f(int arr[]) {\n    printf(\"%zu\\n\", sizeof(arr));\n}\nint main() {\n    int a[10];\n    printf(\"%zu\\n\", sizeof(a));\n    f(a);\n}",
+      "a_short": "`40` then `8` — the array decays to a pointer when passed to a function.",
+      "a_full": "`sizeof(a)` in main is 10 × 4 bytes. Inside `f`, the parameter is really `int *arr`, so `sizeof` gives the pointer size. This is why C functions taking arrays must also take a length — there is no way to recover it.",
+      "mcq": { "options": ["40 then 40", "40 then 8", "10 then 10", "8 then 8"], "correct": 1 }
+    },
+    {
+      "id": "sys-003",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["memory", "bugs"],
+      "q": "Name the four classic C memory bugs.",
+      "a_short": "Memory leak (never freed), dangling pointer / use-after-free, double free, and buffer overflow.",
+      "a_full": "Set a pointer to NULL immediately after freeing — `free(NULL)` is a safe no-op, so this neutralizes double free and makes use-after-free crash loudly instead of corrupting silently. Tooling: Valgrind, AddressSanitizer, static analysers.",
+      "mcq": { "options": ["Only leaks and overflows", "Leak, use-after-free, double free, buffer overflow", "Only null dereference", "Stack overflow only"], "correct": 1 }
+    },
+    {
+      "id": "sys-004",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["struct", "alignment"],
+      "q": "What is `sizeof(struct S)` on a typical 64-bit system, and why?",
+      "code": "struct S {\n    char  a;   // 1 byte\n    int   b;   // 4 bytes\n    char  c;   // 1 byte\n};",
+      "a_short": "12 bytes — 3 bytes of padding after `a` to align `b`, and 3 trailing bytes so the struct's size is a multiple of its alignment.",
+      "a_full": "Reordering to `int b; char a; char c;` gives 8 bytes. Ordering members largest-first is free memory savings, which matters when you have arrays of millions of structs. Packing with `#pragma pack` removes padding but causes unaligned access, which is slow on ARM and a hard fault on some cores.",
+      "mcq": { "options": ["6 bytes", "12 bytes", "8 bytes", "16 bytes"], "correct": 1 }
+    },
+    {
+      "id": "sys-005",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["cache", "performance"],
+      "q": "Why does loop order change matrix traversal speed so dramatically in C?",
+      "a_short": "C is row-major. Iterating rows-then-columns walks contiguous memory and uses every byte of each cache line; the reverse order strides past memory and misses on nearly every access.",
+      "a_full": "A 64-byte cache line holds 16 floats. Row-major order gets 16 useful values per miss; column-major order gets 1. The slowdown is commonly 5-10×, with identical FLOPs — a direct demonstration that memory access patterns, not arithmetic, decide real performance.",
+      "a_code": "// fast: contiguous\nfor (i = 0; i < N; i++)\n    for (j = 0; j < N; j++)\n        sum += a[i][j];\n\n// slow: strided\nfor (j = 0; j < N; j++)\n    for (i = 0; i < N; i++)\n        sum += a[i][j];",
+      "mcq": { "options": ["Compiler optimization differences", "C is row-major; row-order traversal uses full cache lines, column-order wastes them", "Different FLOP counts", "Branch prediction"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    },
+    {
+      "id": "sys-006",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["volatile", "embedded"],
+      "q": "What does `volatile` mean and when is it required?",
+      "a_short": "It tells the compiler the value can change outside the program's control, so it must re-read it from memory and not optimize accesses away.",
+      "a_full": "Required for memory-mapped hardware registers, variables modified by an ISR, and variables touched by `setjmp`/`longjmp`. It is *not* a concurrency primitive — it guarantees nothing about atomicity or memory ordering between threads. Use `_Atomic` or proper synchronization for that.",
+      "mcq": { "options": ["It makes a variable thread-safe", "It forces re-reads from memory for values that change outside program control", "It makes a variable constant", "It allocates on the heap"], "correct": 1 }
+    },
+    {
+      "id": "sys-007",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["integer", "signedness"],
+      "q": "What does this print, and why is it surprising?",
+      "code": "int i = -1;\nunsigned int u = 1;\nif (i < u)\n    printf(\"less\\n\");\nelse\n    printf(\"not less\\n\");",
+      "a_short": "`not less` — the usual arithmetic conversions promote `i` to unsigned, turning −1 into 4294967295.",
+      "a_full": "This is a real source of security bugs: a signed length check against an unsigned size passes when it shouldn't. Compile with `-Wsign-compare` and keep size types consistent (`size_t` throughout).",
+      "mcq": { "options": ["less", "not less", "Undefined behaviour", "Compile error"], "correct": 1 }
+    },
+    {
+      "id": "sys-008",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["const", "pointers"],
+      "q": "What's the difference between `const int *p`, `int *const p` and `const int *const p`?",
+      "a_short": "Pointer to const int (can't change the value), const pointer to int (can't repoint it), and const pointer to const int (neither).",
+      "a_full": "Read declarations right to left from the identifier: `int * const p` → 'p is a const pointer to int'. The `const int *` form is what you want for a read-only function parameter — it documents intent and lets the compiler catch accidental writes.",
+      "mcq": { "options": ["They are all equivalent", "const int *p: value is const; int *const p: pointer is const; both const: neither changes", "const int *p: pointer is const", "Only the third is valid C"], "correct": 1 }
+    },
+    {
+      "id": "sys-009",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["static"],
+      "q": "What does `static` mean in C — all three contexts?",
+      "a_short": "On a global or function: internal linkage, visible only in that translation unit. On a local variable: persistent storage, initialized once, retains its value across calls.",
+      "a_full": "`static` on file-scope functions is the C equivalent of 'private' and lets the compiler inline more aggressively. A `static` local is stored in the data segment, not on the stack — which also makes it not thread-safe without synchronization.",
+      "mcq": { "options": ["Always means constant", "Internal linkage at file scope; persistent single-initialized storage for locals", "Means thread-local", "Allocates on the heap"], "correct": 1 }
+    },
+    {
+      "id": "sys-010",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["endianness"],
+      "q": "What is endianness and when does it bite you?",
+      "a_short": "The byte order of multi-byte values. Little-endian stores the least significant byte first; big-endian the opposite. It matters for network protocols, file formats and binary blobs crossing machines.",
+      "a_full": "x86 and ARM (in practice) are little-endian; network byte order is big-endian, hence `htons`/`ntohl`. Never `memcpy` a struct across a wire or into a file and read it back on another architecture — serialize field by field with an explicit byte order.",
+      "mcq": { "options": ["The order of struct members", "Byte order of multi-byte values; matters for networks, files and cross-machine binary data", "The direction of array indexing", "A compiler optimization"], "correct": 1 }
+    },
+    {
+      "id": "sys-011",
+      "type": "coding",
+      "difficulty": 2,
+      "tags": ["bits"],
+      "q": "Set, clear, toggle and test bit n of a register.",
+      "a_short": "Set `r |= (1u << n)`, clear `r &= ~(1u << n)`, toggle `r ^= (1u << n)`, test `(r >> n) & 1u`.",
+      "a_code": "#define BIT(n)        (1u << (n))\n#define SET(r, n)     ((r) |=  BIT(n))\n#define CLR(r, n)     ((r) &= ~BIT(n))\n#define TOG(r, n)     ((r) ^=  BIT(n))\n#define TST(r, n)     (((r) >> (n)) & 1u)",
+      "a_full": "Use unsigned literals — `1 << 31` on a signed int is undefined behaviour. For hardware registers, the variable must also be `volatile`, and read-modify-write on a register an ISR also touches needs the interrupt disabled around it.",
+      "mcq": { "options": ["Set with &, clear with |", "Set with |=, clear with &= ~, toggle with ^=", "All use ^", "Set with <<, clear with >>"], "correct": 1 }
+    },
+    {
+      "id": "sys-012",
+      "type": "compare",
+      "difficulty": 3,
+      "tags": ["fixed-point", "embedded"],
+      "q": "Why use fixed-point instead of floating-point on an MCU or DSP?",
+      "a_short": "Many MCUs have no FPU, so float operations are emulated in software — 10-100× slower and larger code. Fixed-point uses the integer ALU.",
+      "a_full": "Fixed-point also has uniform absolute precision across its range, which suits sensor data with a known scale, whereas float has uniform relative precision. The cost is that you manage the scaling yourself and must watch for overflow — there's no graceful degradation, values just wrap.",
+      "mcq": { "options": ["Fixed-point is more accurate everywhere", "Many MCUs lack an FPU, so floats are emulated in software and far slower", "Floating point uses more memory per value always", "Fixed-point has a larger dynamic range"], "correct": 1 }
+    },
+    {
+      "id": "sys-013",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["pointers", "bugs"],
+      "q": "What's wrong with this function?",
+      "code": "char *make_greeting(void) {\n    char buf[64];\n    snprintf(buf, sizeof buf, \"hello\");\n    return buf;\n}",
+      "a_short": "It returns a pointer to a stack array that is destroyed when the function returns — a dangling pointer.",
+      "a_full": "The memory is reused by the next call, so the data looks fine immediately after and corrupts later, which makes it brutal to debug. Fixes: `malloc` the buffer (caller frees), take a caller-provided buffer and size, or use a `static` buffer if you accept the thread-safety cost.",
+      "mcq": { "options": ["Buffer is too small", "Returns a pointer to a stack array that no longer exists", "snprintf is misused", "Nothing is wrong"], "correct": 1 }
+    },
+    {
+      "id": "sys-014",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["cache", "optimization"],
+      "q": "What is false sharing?",
+      "a_short": "Two threads writing to different variables that happen to sit on the same cache line, forcing the line to ping-pong between cores.",
+      "a_full": "Nothing is logically shared, but the cache coherence protocol invalidates the whole 64-byte line on every write. The fix is padding or alignment so each thread's data occupies its own line — `alignas(64)` on the struct, or padding fields. It shows up as a parallel program that gets slower with more threads.",
+      "mcq": { "options": ["Two threads reading the same variable", "Threads writing different variables on the same cache line, causing coherence traffic", "A race condition on a lock", "Sharing a file descriptor"], "correct": 1 }
+    },
+    {
+      "id": "sys-015",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["compilation"],
+      "q": "What are the four stages from .c to executable?",
+      "a_short": "Preprocess (expand macros and includes) → compile (to assembly) → assemble (to object code) → link (resolve symbols into an executable).",
+      "a_full": "Knowing the stages makes errors readable: 'undefined reference' is a linker error (the symbol was declared but never defined, or you forgot `-l`), while 'implicit declaration' is a compiler error from a missing header. `gcc -E`, `-S`, `-c` stop after each stage.",
+      "mcq": { "options": ["Compile and run only", "Preprocess, compile, assemble, link", "Parse, optimize, emit", "Lex, parse, link"], "correct": 1 }
+    },
+    {
+      "id": "sys-016",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["simd", "optimization"],
+      "q": "What is SIMD and why does it matter for inference kernels?",
+      "a_short": "Single Instruction, Multiple Data — one instruction operating on a vector of values. ARM NEON processes 16 INT8 lanes at once.",
+      "a_full": "This is where INT8's speedup actually comes from: the same 128-bit register holds 4 FP32 values or 16 INT8 values, so the throughput ratio is 4×. Getting it requires contiguous, aligned data and no loop-carried dependencies — which is why data layout (NHWC vs NCHW) is a performance decision, not a formatting one.",
+      "mcq": { "options": ["A threading model", "One instruction operating on a vector of values — 16 INT8 lanes per 128-bit NEON register", "A cache replacement policy", "A compression format"], "correct": 1 },
+      "asked_at": ["Qualcomm"]
+    }
+  ]
+}

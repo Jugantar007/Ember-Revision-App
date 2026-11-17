@@ -1,0 +1,363 @@
+{
+  "section": "Python Fundamentals",
+  "version": 1,
+  "items": [
+    {
+      "id": "pyf-001",
+      "type": "predict_output",
+      "difficulty": 2,
+      "tags": ["mutable-default", "gotcha"],
+      "q": "What does this print, and why is it a classic bug?",
+      "code": "def add(item, bucket=[]):\n    bucket.append(item)\n    return bucket\n\nprint(add(1))\nprint(add(2))",
+      "a_short": "`[1]` then `[1, 2]` — the default list is created once, at function definition time, and shared across every call.",
+      "a_full": "Default arguments are evaluated once when the `def` statement executes, not on each call. The fix is `def add(item, bucket=None)` then `if bucket is None: bucket = []` inside the body.",
+      "mcq": { "options": ["[1] then [2]", "[1] then [1, 2]", "[1] then []", "TypeError"], "correct": 1 },
+      "asked_at": ["Amazon", "Qualcomm"]
+    },
+    {
+      "id": "pyf-002",
+      "type": "predict_output",
+      "difficulty": 2,
+      "tags": ["aliasing", "lists"],
+      "q": "What prints?",
+      "code": "a = [[]] * 3\na[0].append(1)\nprint(a)",
+      "a_short": "`[[1], [1], [1]]` — all three slots reference the same list object.",
+      "a_full": "`*` on a list copies references, not objects. Use `[[] for _ in range(3)]` to get three independent lists.",
+      "mcq": { "options": ["[[1], [], []]", "[[1], [1], [1]]", "[[1]]", "TypeError"], "correct": 1 }
+    },
+    {
+      "id": "pyf-003",
+      "type": "compare",
+      "difficulty": 1,
+      "tags": ["identity", "equality"],
+      "q": "`is` vs `==` — what does each actually compare?",
+      "a_short": "`is` compares identity (same object in memory); `==` compares value via `__eq__`.",
+      "a_full": "Use `is` only for singletons: `None`, `True`, `False`, sentinel objects. Small ints (-5 to 256) and some short strings are interned, so `a is b` can be accidentally True for them — never rely on that.",
+      "mcq": { "options": ["Both compare value", "`is` compares identity, `==` compares value", "`is` compares type, `==` compares value", "They are interchangeable"], "correct": 1 }
+    },
+    {
+      "id": "pyf-004",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["scoping", "legb"],
+      "q": "What is the LEGB rule?",
+      "a_short": "Name lookup order: Local → Enclosing → Global → Built-in.",
+      "a_full": "Python searches the local function scope first, then any enclosing function scopes, then module globals, then builtins. `global` rebinds at module level; `nonlocal` rebinds in the nearest enclosing function scope.",
+      "mcq": { "options": ["Local, Enclosing, Global, Built-in", "Local, Global, External, Built-in", "Lexical, Explicit, Global, Bound", "Local, Extended, Generic, Base"], "correct": 0 }
+    },
+    {
+      "id": "pyf-005",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["closures", "late-binding"],
+      "q": "What does this print?",
+      "code": "fns = [lambda: i for i in range(3)]\nprint([f() for f in fns])",
+      "a_short": "`[2, 2, 2]` — closures capture the variable, not its value at creation time.",
+      "a_full": "By the time the lambdas run, the loop has finished and `i` is 2. Bind it eagerly with a default argument: `lambda i=i: i`.",
+      "mcq": { "options": ["[0, 1, 2]", "[2, 2, 2]", "[3, 3, 3]", "NameError"], "correct": 1 },
+      "asked_at": ["Google"]
+    },
+    {
+      "id": "pyf-006",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["generators", "memory"],
+      "q": "Generator expression vs list comprehension — when does the difference matter?",
+      "a_short": "A list comprehension builds the whole list in memory; a generator yields one item at a time and holds O(1) state.",
+      "a_full": "Use a generator for large or infinite streams, or when you only iterate once. Use a list when you need indexing, `len()`, or multiple passes. A generator is consumed once — iterating it again yields nothing.",
+      "mcq": { "options": ["No real difference", "Generators are lazy and O(1) memory; lists are eager and O(n)", "Lists are lazy, generators are eager", "Generators are always faster"], "correct": 1 }
+    },
+    {
+      "id": "pyf-007",
+      "type": "predict_output",
+      "difficulty": 2,
+      "tags": ["generators"],
+      "q": "What prints?",
+      "code": "g = (x * x for x in range(4))\nprint(sum(g))\nprint(sum(g))",
+      "a_short": "`14` then `0` — the generator is exhausted after the first pass.",
+      "a_full": "Generators are single-use iterators. Once consumed they raise `StopIteration` immediately, so `sum` over an exhausted generator returns 0.",
+      "mcq": { "options": ["14 then 14", "14 then 0", "14 then StopIteration", "0 then 0"], "correct": 1 }
+    },
+    {
+      "id": "pyf-008",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["decorators"],
+      "q": "What is a decorator, mechanically?",
+      "a_short": "A callable that takes a function and returns a replacement. `@dec` above `def f` is sugar for `f = dec(f)`.",
+      "a_full": "Decorators with arguments need a third layer: the outer call returns the actual decorator. Always apply `functools.wraps` to the wrapper so `__name__`, `__doc__` and `__wrapped__` survive.",
+      "a_code": "import functools\n\ndef retry(times):\n    def deco(fn):\n        @functools.wraps(fn)\n        def wrapper(*a, **kw):\n            for _ in range(times - 1):\n                try: return fn(*a, **kw)\n                except Exception: pass\n            return fn(*a, **kw)\n        return wrapper\n    return deco",
+      "mcq": { "options": ["A class that wraps a function", "A callable returning a replacement callable; `@d` means `f = d(f)`", "A type annotation", "A compiler directive"], "correct": 1 }
+    },
+    {
+      "id": "pyf-009",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["decorators", "functools"],
+      "q": "Why is `functools.wraps` needed on a decorator's wrapper?",
+      "a_short": "Without it the wrapper's own `__name__`, `__doc__`, `__module__` and signature shadow the original function's.",
+      "a_full": "That breaks introspection, debuggers, documentation tools and anything relying on `help()`. `wraps` also sets `__wrapped__`, which lets `inspect.signature` dig through to the real function.",
+      "mcq": { "options": ["It makes the wrapper faster", "It preserves the wrapped function's metadata", "It makes the decorator thread-safe", "It is purely stylistic"], "correct": 1 }
+    },
+    {
+      "id": "pyf-010",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["gil", "concurrency"],
+      "q": "What is the GIL and what does it actually prevent?",
+      "a_short": "A single mutex in CPython that lets only one thread execute Python bytecode at a time — so threads give no CPU-bound speedup.",
+      "a_full": "I/O-bound work still benefits from threads because the GIL is released during blocking I/O, and C extensions (NumPy, PyTorch) release it during heavy compute. For CPU-bound Python, use `multiprocessing` or move the hot loop into C/NumPy.",
+      "mcq": { "options": ["It prevents memory leaks", "It allows only one thread to run Python bytecode at a time", "It blocks all I/O during compute", "It stops race conditions entirely"], "correct": 1 },
+      "asked_at": ["Qualcomm", "Microsoft"]
+    },
+    {
+      "id": "pyf-011",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["concurrency"],
+      "q": "threading vs multiprocessing vs asyncio — which for what?",
+      "a_short": "threading for blocking I/O, multiprocessing for CPU-bound work, asyncio for very high-concurrency non-blocking I/O.",
+      "a_full": "Threads share memory (cheap data sharing, needs locks). Processes have separate memory (true parallelism, pickling overhead at the boundary). asyncio is single-threaded cooperative scheduling — thousands of sockets, but one blocking call stalls the whole loop.",
+      "mcq": { "options": ["threading for CPU, multiprocessing for I/O", "threading for I/O, multiprocessing for CPU, asyncio for high-concurrency I/O", "All three are equivalent", "asyncio for CPU-bound work"], "correct": 1 }
+    },
+    {
+      "id": "pyf-012",
+      "type": "compare",
+      "difficulty": 2,
+      "tags": ["copy"],
+      "q": "Shallow copy vs deep copy.",
+      "a_short": "Shallow copies the outer container but shares the nested objects; deep recursively copies everything.",
+      "a_full": "`list(x)`, `x[:]` and `copy.copy(x)` are shallow. `copy.deepcopy(x)` walks the object graph and handles cycles via a memo dict — correct but slow.",
+      "code": "import copy\na = [[1, 2], [3]]\nb = copy.copy(a)\nb[0].append(99)\nprint(a)",
+      "mcq": { "options": ["[[1, 2], [3]]", "[[1, 2, 99], [3]]", "[[1, 2], [3, 99]]", "Error"], "correct": 1 }
+    },
+    {
+      "id": "pyf-013",
+      "type": "compare",
+      "difficulty": 1,
+      "tags": ["lists", "tuples"],
+      "q": "list vs tuple — beyond mutability, what changes?",
+      "a_short": "Tuples are hashable (usable as dict keys / set members), slightly smaller and faster to construct, and signal fixed structure.",
+      "a_full": "A tuple is only hashable if everything inside it is. Lists have extra capacity for amortized O(1) append, which costs memory; tuples are allocated exactly.",
+      "mcq": { "options": ["Nothing else differs", "Tuples are hashable, more compact, and fixed-structure", "Tuples support append", "Lists cannot be nested"], "correct": 1 }
+    },
+    {
+      "id": "pyf-014",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["dict", "ordering"],
+      "q": "Are Python dicts ordered?",
+      "a_short": "Yes — insertion order is an implementation detail in 3.6 and a language guarantee from 3.7 onward.",
+      "a_full": "The compact dict layout stores entries in a dense insertion-ordered array with a sparse index table, which cut memory ~20% and gave ordering for free. `collections.OrderedDict` still differs: it has `move_to_end` and order-sensitive `==`.",
+      "mcq": { "options": ["Never ordered", "Guaranteed insertion-ordered since 3.7", "Sorted by key", "Ordered only for string keys"], "correct": 1 }
+    },
+    {
+      "id": "pyf-015",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["complexity", "builtins"],
+      "q": "Average-case complexity of `x in list`, `x in set`, `x in dict`?",
+      "a_short": "List is O(n); set and dict are O(1) average, O(n) worst case under hash collisions.",
+      "a_full": "Converting a list to a set before repeated membership tests turns an O(n·m) loop into O(n+m) — one of the highest-value one-line optimizations in interview coding rounds.",
+      "mcq": { "options": ["All O(1)", "List O(n), set/dict O(1) average", "All O(log n)", "List O(1), set O(n)"], "correct": 1 }
+    },
+    {
+      "id": "pyf-016",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["strings", "performance"],
+      "q": "Why is `''.join(parts)` preferred over repeated `s += x` in a loop?",
+      "a_short": "Strings are immutable, so each `+=` allocates a new string and copies — O(n²) overall. `join` sizes the buffer once and copies once.",
+      "a_full": "CPython has an in-place optimization when a string has refcount 1, which sometimes hides the cost, but it is not guaranteed and vanishes the moment another reference exists.",
+      "mcq": { "options": ["join is just stylistic", "+= is O(n²) because strings are immutable; join is O(n)", "join uses less memory but is slower", "+= fails on long strings"], "correct": 1 }
+    },
+    {
+      "id": "pyf-017",
+      "type": "predict_output",
+      "difficulty": 2,
+      "tags": ["slicing"],
+      "q": "What prints?",
+      "code": "s = 'abcdef'\nprint(s[::-2])\nprint(s[10:20])",
+      "a_short": "`fdb` then an empty string.",
+      "a_full": "A negative step walks backwards from the end. Out-of-range slices clamp silently and return empty — unlike indexing, which raises `IndexError`.",
+      "mcq": { "options": ["fdb then ''", "fdb then IndexError", "ace then ''", "fedcba then ''"], "correct": 0 }
+    },
+    {
+      "id": "pyf-018",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["iterators"],
+      "q": "Iterable vs iterator — what's the distinction?",
+      "a_short": "An iterable implements `__iter__`; an iterator implements both `__iter__` and `__next__` and carries position state.",
+      "a_full": "`iter(iterable)` returns a fresh iterator. A list is iterable but not an iterator — that's why you can loop over a list many times but a generator only once.",
+      "mcq": { "options": ["They are the same", "Iterable has __iter__; iterator has __iter__ and __next__ plus state", "Iterator has only __next__", "Iterables are always lazy"], "correct": 1 }
+    },
+    {
+      "id": "pyf-019",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["context-manager"],
+      "q": "How does `with` work under the hood?",
+      "a_short": "The object's `__enter__` runs on entry; `__exit__(exc_type, exc, tb)` runs on exit, even if an exception was raised.",
+      "a_full": "Returning a truthy value from `__exit__` suppresses the exception. `contextlib.contextmanager` lets you write one with a generator: code before `yield` is enter, after is exit, and a `try/finally` guarantees cleanup.",
+      "mcq": { "options": ["It is sugar for try/except", "Calls __enter__ on entry and __exit__ on exit, including on exceptions", "It only works with files", "It spawns a new scope"], "correct": 1 }
+    },
+    {
+      "id": "pyf-020",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["exceptions", "control-flow"],
+      "q": "What does this print?",
+      "code": "def f():\n    try:\n        return 'try'\n    finally:\n        print('finally')\n\nprint(f())",
+      "a_short": "`finally` then `try` — the `finally` block runs before the function actually returns.",
+      "a_full": "The return value is evaluated and stashed, `finally` executes, then the value is returned. A `return` inside `finally` would overwrite it, which is why that is a lint error in most codebases.",
+      "mcq": { "options": ["try then finally", "finally then try", "try only", "finally only"], "correct": 1 }
+    },
+    {
+      "id": "pyf-021",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["exceptions"],
+      "q": "What does the `else` clause on a `try` block do?",
+      "a_short": "It runs only if no exception was raised, before `finally`.",
+      "a_full": "It keeps the `try` body down to just the line that can fail, so you don't accidentally catch exceptions from follow-up code that was never meant to be guarded.",
+      "mcq": { "options": ["Runs when an exception occurs", "Runs only when no exception was raised", "Always runs", "Replaces finally"], "correct": 1 }
+    },
+    {
+      "id": "pyf-022",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["memory", "gc"],
+      "q": "How does CPython manage memory?",
+      "a_short": "Reference counting frees objects immediately at count zero; a generational cycle collector handles reference cycles.",
+      "a_full": "Three generations; an object surviving a collection is promoted. Cycles containing objects with `__del__` were uncollectable before 3.4. `gc.disable()` is sometimes a real win in short-lived batch jobs.",
+      "mcq": { "options": ["Mark and sweep only", "Reference counting plus a generational cycle collector", "Manual malloc/free", "Copying collector"], "correct": 1 }
+    },
+    {
+      "id": "pyf-023",
+      "type": "predict_output",
+      "difficulty": 1,
+      "tags": ["floats"],
+      "q": "What prints?",
+      "code": "print(0.1 + 0.2 == 0.3)\nprint(round(0.1 + 0.2, 10) == 0.3)",
+      "a_short": "`False` then `True` — binary floating point can't represent 0.1 or 0.2 exactly.",
+      "a_full": "Compare floats with `math.isclose(a, b)` or an explicit tolerance. Use `decimal.Decimal` for money, `fractions.Fraction` for exact rationals.",
+      "mcq": { "options": ["True then True", "False then True", "False then False", "True then False"], "correct": 1 }
+    },
+    {
+      "id": "pyf-024",
+      "type": "concept",
+      "difficulty": 1,
+      "tags": ["modules"],
+      "q": "What does `if __name__ == '__main__':` guard?",
+      "a_short": "Code that should run only when the file is executed directly, not when it is imported.",
+      "a_full": "On import, `__name__` is the module's name; when run as a script it is `'__main__'`. This matters a lot with `multiprocessing` on Windows and macOS spawn, where child processes re-import the main module.",
+      "mcq": { "options": ["Code that runs on import", "Code that runs only when the file is executed directly", "Private functions", "Type checking"], "correct": 1 }
+    },
+    {
+      "id": "pyf-025",
+      "type": "predict_output",
+      "difficulty": 3,
+      "tags": ["mutation", "iteration"],
+      "q": "What prints?",
+      "code": "nums = [1, 2, 3, 4]\nfor n in nums:\n    if n % 2 == 0:\n        nums.remove(n)\nprint(nums)",
+      "a_short": "`[1, 3]` — but only by luck. Removing while iterating shifts elements under the loop's internal index, so an element gets skipped.",
+      "a_full": "Trace it: at index 1 the loop sees 2 and removes it, so the list becomes [1,3,4] and 3 slides into index 1 — already passed. The loop moves to index 2, sees 4, removes it. The skipped element happened to be odd, so the answer looks right. Change the input to [1,2,4,3] and it breaks. Never mutate a list you are iterating: `nums = [n for n in nums if n % 2]`.",
+      "mcq": { "options": ["[1, 3]", "[1, 2, 3]", "[1, 3, 4]", "[]"], "correct": 0 }
+    },
+    {
+      "id": "pyf-026",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["sorting"],
+      "q": "Is Python's `sorted` stable, and what algorithm does it use?",
+      "a_short": "Yes, stable — equal elements keep their original relative order. It uses Timsort, O(n log n) worst case, O(n) on nearly-sorted input.",
+      "a_full": "Stability lets you sort by multiple keys in passes: sort by the secondary key first, then by the primary. Or do it in one go with a tuple key: `key=lambda r: (r.dept, -r.score)`.",
+      "mcq": { "options": ["Unstable quicksort", "Stable Timsort", "Stable heapsort", "Unstable introsort"], "correct": 1 }
+    },
+    {
+      "id": "pyf-027",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["scoping"],
+      "q": "`global` vs `nonlocal`.",
+      "a_short": "`global` binds a name at module level; `nonlocal` binds it in the nearest enclosing function scope.",
+      "a_full": "Without either, assigning to a name inside a function makes it local for the entire function body — which is why reading it before assignment raises `UnboundLocalError` rather than falling back to the outer scope.",
+      "mcq": { "options": ["They are synonyms", "global → module scope, nonlocal → nearest enclosing function scope", "nonlocal → module scope", "global works only at class level"], "correct": 1 }
+    },
+    {
+      "id": "pyf-028",
+      "type": "predict_output",
+      "difficulty": 2,
+      "tags": ["scoping", "gotcha"],
+      "q": "What happens here?",
+      "code": "x = 10\ndef f():\n    print(x)\n    x = 5\nf()",
+      "a_short": "`UnboundLocalError` — the assignment makes `x` local for the whole function, so the `print` reads an unbound local.",
+      "a_full": "Python decides local-vs-global at compile time by scanning for assignments, not at runtime line by line. Add `global x` if you really mean the module-level name.",
+      "mcq": { "options": ["Prints 10", "Prints 5", "UnboundLocalError", "NameError"], "correct": 2 }
+    },
+    {
+      "id": "pyf-029",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["builtins"],
+      "q": "What do `enumerate`, `zip` and `any`/`all` buy you?",
+      "a_short": "`enumerate` gives index+value without a counter, `zip` walks sequences in lockstep and stops at the shortest, `any`/`all` short-circuit.",
+      "a_full": "`zip(*matrix)` transposes. `zip(strict=True)` (3.10+) raises if lengths differ, catching silent truncation. `any`/`all` over a generator stop as soon as the result is decided.",
+      "mcq": { "options": ["zip pads to the longest", "zip stops at the shortest and any/all short-circuit", "any/all always scan everything", "enumerate requires a list"], "correct": 1 }
+    },
+    {
+      "id": "pyf-030",
+      "type": "predict_output",
+      "difficulty": 2,
+      "tags": ["truthiness"],
+      "q": "What prints?",
+      "code": "vals = [0, '', [], None, 'False', 0.0, {}]\nprint(sum(1 for v in vals if v))",
+      "a_short": "`1` — only the non-empty string `'False'` is truthy.",
+      "a_full": "Falsy values: `False`, `None`, zero of any numeric type, and empty containers/strings. A non-empty string is always truthy no matter what it spells.",
+      "mcq": { "options": ["0", "1", "2", "7"], "correct": 1 }
+    },
+    {
+      "id": "pyf-031",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["syntax", "walrus"],
+      "q": "What does the walrus operator `:=` do?",
+      "a_short": "Assigns a value as part of an expression, so you can bind and test in one step.",
+      "a_full": "Common uses: `while (chunk := f.read(8192)):` and `if (m := re.search(p, s)):`. It keeps the value in scope without a pre-loop read or duplicated call.",
+      "code": "while (line := fh.readline()):\n    process(line)",
+      "mcq": { "options": ["Compares and assigns", "Assigns within an expression", "Unpacks a tuple", "Declares a constant"], "correct": 1 }
+    },
+    {
+      "id": "pyf-032",
+      "type": "compare",
+      "difficulty": 1,
+      "tags": ["lists"],
+      "q": "`append` vs `extend` vs `+=` on a list.",
+      "a_short": "`append(x)` adds one element; `extend(it)` adds each element of an iterable; `+=` on a list behaves like `extend` and mutates in place.",
+      "a_full": "`lst = lst + other` creates a new list and rebinds; `lst += other` mutates the original, which is visible to every other reference to it. That difference bites when the list is a function argument.",
+      "code": "a = [1, 2]\na.append([3, 4])\nb = [1, 2]\nb.extend([3, 4])\nprint(a, b)",
+      "mcq": { "options": ["[1,2,3,4] [1,2,3,4]", "[1,2,[3,4]] [1,2,3,4]", "[1,2,[3,4]] [1,2,[3,4]]", "TypeError"], "correct": 1 }
+    },
+    {
+      "id": "pyf-033",
+      "type": "concept",
+      "difficulty": 3,
+      "tags": ["performance", "profiling"],
+      "q": "A Python function is too slow. What's your order of attack?",
+      "a_short": "Measure first (`cProfile`, `line_profiler`), fix algorithmic complexity, then vectorize with NumPy, then cache, then drop to C/Cython/Numba.",
+      "a_full": "Never optimize on intuition — the hot line is almost never where you'd guess. Big wins in order: better data structure (set/dict lookups), removing work from inner loops, `functools.lru_cache` on pure functions, NumPy to move loops into C, and only then a native extension.",
+      "mcq": { "options": ["Rewrite in C immediately", "Profile, fix complexity, vectorize, cache, then go native", "Add threads", "Increase recursion limit"], "correct": 1 }
+    },
+    {
+      "id": "pyf-034",
+      "type": "concept",
+      "difficulty": 2,
+      "tags": ["dataclass"],
+      "q": "What does `@dataclass` generate for you?",
+      "a_short": "`__init__`, `__repr__` and `__eq__` from the annotated class attributes.",
+      "a_full": "`frozen=True` makes instances immutable and hashable; `slots=True` (3.10+) cuts per-instance memory by dropping `__dict__`; `field(default_factory=list)` is the safe way to default a mutable attribute.",
+      "mcq": { "options": ["Only __init__", "__init__, __repr__ and __eq__", "Only type checking", "A full ORM mapping"], "correct": 1 }
+    }
+  ]
+}
