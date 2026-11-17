@@ -20,7 +20,7 @@ No build step, no dependencies, no backend. Push to GitHub → the app on your p
 ## 1. Get it on GitHub
 
 ```bash
-cd Revision-App
+cd Ember-Revision-App
 git init
 git add .
 git commit -m "Initial commit"
@@ -29,17 +29,13 @@ git remote add origin https://github.com/Jugantar007/Revision-App.git
 git push -u origin main
 ```
 
-Then on github.com: **Settings → Pages → Build and deployment**
-- Source: **Deploy from a branch**
-- Branch: **main**, folder: **/ (root)**
-- Save
 
-A minute later the app is live at **https://jugantar007.github.io/Revision-App/**
+ the app is live at **https://jugantar007.github.io/Revision-App/**
 
 > Keep the repo **public** if you want GitHub Actions reminders on the free tier — scheduled
 > workflows on private repos consume Actions minutes from your quota.
 
-## 2. Install on your Pixel 8 Pro
+## 2. Install on your phone
 
 1. Open the Pages URL in **Chrome** on the phone
 2. Menu (⋮) → **Add to Home screen** → **Install**
@@ -49,7 +45,7 @@ The layout is built for the Pixel 8 Pro's 448 × 997 CSS-px viewport: the warm p
 from the Ember logo with frosted white cards, all controls in the bottom thumb zone, and transform-only animations
 so the 120 Hz panel stays smooth.
 
-## 3. The update loop
+## 3. The update 
 
 | You do | What happens |
 |---|---|
