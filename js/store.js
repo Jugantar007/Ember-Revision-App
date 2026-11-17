@@ -11,6 +11,7 @@ const Store = (function () {
 
   const DEFAULTS = {
     schema: SCHEMA,
+    profile: { name: '' },    // asked once on first launch; drives the greeting
     settings: {
       dailyCards: 40,
       dailyMinutes: 60,
@@ -273,9 +274,17 @@ const Store = (function () {
     flush();
   }
 
+  function setName(name) {
+    state.profile.name = String(name || '').trim().replace(/\s+/g, ' ').slice(0, 24);
+    flush();
+    return state.profile.name;
+  }
+
   return {
     get state() { return state; },
     get settings() { return state.settings; },
+    get name() { return state.profile.name; },
+    setName,
     save, flush,
     today, dayKey, addDays, daysBetween,
     card, setCard, isDue, isNew,

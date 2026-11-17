@@ -6,7 +6,7 @@
  *   - Push: shows revision reminders sent by the GitHub Actions cron job.
  */
 
-const SHELL_VERSION = 'pyrev-shell-v4';
+const SHELL_VERSION = 'pyrev-shell-v6';
 const DATA_CACHE = 'pyrev-data-v1';
 
 const SHELL_ASSETS = [
@@ -20,6 +20,9 @@ const SHELL_ASSETS = [
   './js/session.js',
   './js/notify.js',
   './js/app.js',
+  './assets/butterfly.png',
+  './fonts/playfair-display-latin-900.woff2',
+  './fonts/lancelot-latin-400.woff2',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/maskable-512.png'
@@ -28,6 +31,7 @@ const SHELL_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_VERSION)
+      // cache: 'reload' skips the HTTP cache, so a new version never re-caches stale files
       .then((cache) => cache.addAll(SHELL_ASSETS.map((u) => new Request(u, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );

@@ -6,6 +6,20 @@
    - Every tappable thing is >= 48px, primary actions live in the bottom third
    ========================================================================== */
 
+/* Brand fonts, bundled so they work offline (SIL OFL, licences in /fonts).
+   Lancelot: the tagline in the Ember logo. Playfair Display Black: the wordmark.
+   `block` hides text briefly rather than flashing a fallback mid-animation. */
+@font-face {
+  font-family: 'Lancelot';
+  src: url('../fonts/lancelot-latin-400.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: block;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('../fonts/playfair-display-latin-900.woff2') format('woff2');
+  font-weight: 900; font-style: normal; font-display: block;
+}
+
 :root {
   /* Warm theme, taken from the Ember logo: pink -> peach -> yellow wash,
      black ink, and the magenta of the butterfly's wings as the accent. */
@@ -74,6 +88,7 @@ body {
 }
 
 button, input, select, textarea { font: inherit; color: inherit; }
+
 /* Any class that sets `display` would otherwise override the hidden attribute. */
 [hidden] { display: none !important; }
 button { background: none; border: 0; cursor: pointer; }
@@ -823,3 +838,137 @@ body::before {
 .nav-item-primary svg { fill: #fff; }
 .boxes .b { background: linear-gradient(180deg, var(--accent), var(--accent-dim)); }
 input[type="time"], input[type="text"], select, textarea { background: rgba(255, 255, 255, .86); }
+
+/* ==========================================================================
+   Opening animation
+   Timeline (from first paint):
+     0.00s  butterfly rises in, soft glow behind it
+     0.45s  wings flap twice (two 3D folds around the body axis)
+     0.55s  E M B E R settles in letter by letter, logo-style pink offset
+     1.05s  tagline, then "made by J"
+     1.75s  app.js lifts the whole layer away (scale + fade)
+   Everything is transform/opacity so it holds 120fps on the Pixel's panel.
+   ========================================================================== */
+
+.splash {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-bottom: 6vh;
+  background:
+    radial-gradient(90% 70% at 100% 0%, #FBD874 0%, rgba(251,216,116,0) 62%),
+    radial-gradient(80% 60% at 100% 100%, #FDEAE0 0%, rgba(253,234,224,0) 65%),
+    linear-gradient(160deg, #F58693 0%, #F9A39B 45%, #F4909F 100%);
+  /* Failsafe: never trap the user behind the splash if JS fails to load. */
+  animation: splashFailsafe .4s ease 7s forwards;
+}
+.splash.out {
+  animation: splashOut .6s cubic-bezier(.4, 0, .2, 1) forwards;
+  pointer-events: none;
+}
+@keyframes splashOut {
+  0%   { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: scale(1.08); }
+}
+@keyframes splashFailsafe { to { opacity: 0; visibility: hidden; } }
+
+.splash-fly {
+  position: relative;
+  width: 200px; height: 124px;
+  perspective: 700px;
+  animation: flyIn .9s cubic-bezier(.22, 1.2, .36, 1) both, flyBob 2.4s ease-in-out .9s infinite;
+}
+.splash-fly::before {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  width: 300px; height: 300px; margin: -150px 0 0 -150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 62%);
+  animation: glow 1.4s ease-out both;
+}
+@keyframes flyIn {
+  from { opacity: 0; transform: translate3d(0, 34px, 0) scale(.72); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes flyBob {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -5px, 0); }
+}
+@keyframes glow {
+  from { opacity: 0; transform: scale(.5); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Each wing is one half of the same image, hinged on the body. */
+.wing {
+  position: absolute; top: 0;
+  width: 50%; height: 100%;
+  background: url('../assets/butterfly.png') no-repeat;
+  background-size: 200% 100%;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+.wing-l { left: 0;  background-position: left center;  transform-origin: right center; animation: flapL .26s ease-in-out .45s 4 alternate both; }
+.wing-r { right: 0; background-position: right center; transform-origin: left center;  animation: flapR .26s ease-in-out .45s 4 alternate both; }
+@keyframes flapL { from { transform: rotateY(0); } to { transform: rotateY(62deg); } }
+@keyframes flapR { from { transform: rotateY(0); } to { transform: rotateY(-62deg); } }
+
+.splash-word {
+  margin-top: 30px;
+  padding-left: .42em;             /* balance the trailing letter-spacing */
+  font-family: 'Playfair Display', Georgia, "Noto Serif", serif;
+  font-size: 46px; font-weight: 900;
+  letter-spacing: .42em;
+  color: #1B0B14;
+}
+.splash-word span {
+  display: inline-block;
+  text-shadow: 3px 2px 0 #F0619A;  /* the pink offset from the logo's wordmark */
+  animation: letterIn .55s cubic-bezier(.22, 1, .36, 1) both;
+}
+.splash-word span:nth-child(1) { animation-delay: .55s; }
+.splash-word span:nth-child(2) { animation-delay: .62s; }
+.splash-word span:nth-child(3) { animation-delay: .69s; }
+.splash-word span:nth-child(4) { animation-delay: .76s; }
+.splash-word span:nth-child(5) { animation-delay: .83s; }
+@keyframes letterIn {
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+
+.splash-tag, .splash-by {
+  font-family: 'Lancelot', Georgia, "Noto Serif", serif;
+  color: #2B0E1E;
+  animation: fadeUp .6s cubic-bezier(.22, 1, .36, 1) both;
+}
+.splash-tag { margin-top: 16px; font-size: 22px; animation-delay: 1.05s; }
+.splash-by  { margin-top: 4px;  font-size: 18px; animation-delay: 1.2s; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ------------------------------ Welcome (name) ------------------------- */
+
+.welcome {
+  min-height: calc(100dvh - var(--sat) - 40px);
+  display: flex; flex-direction: column; justify-content: center;
+  padding-bottom: 8vh;
+}
+.welcome-fly { width: 132px; height: auto; display: block; margin: 0 auto 26px; }
+.welcome .h1 { font-size: 26px; line-height: 1.25; margin-top: 6px; }
+.welcome input[type="text"] {
+  width: 100%; margin-top: 22px;
+  min-height: 54px; padding: 12px 16px;
+  font-size: 18px; border-radius: 14px;
+  border: 1.5px solid rgba(70, 18, 44, .2);
+}
+.welcome input[type="text"]:focus { outline: none; border-color: var(--accent); }
+.field-err { margin-top: 8px; font-size: 13px; font-weight: 560; color: var(--r-again); }
+.welcome .btn-primary { margin-top: 16px; min-height: 54px; font-size: 16px; }
+
+/* Home greeting with the name in it */
+.greet { font-size: 25px; line-height: 1.2; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-fly, .wing, .splash-word span, .splash-tag, .splash-by, .splash-fly::before { animation: none !important; }
+}

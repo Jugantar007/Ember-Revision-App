@@ -12,9 +12,20 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/favicon-64.png" sizes="64x64">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="preload" href="./fonts/playfair-display-latin-900.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./fonts/lancelot-latin-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="./css/app.css">
 </head>
 <body>
+
+<!-- Opening animation. Static markup so it paints on the very first frame,
+     before any JS runs; app.js lifts it once content has loaded. Tap skips it. -->
+<div id="splash" class="splash" aria-hidden="true">
+  <div class="splash-fly"><i class="wing wing-l"></i><i class="wing wing-r"></i></div>
+  <div class="splash-word"><span>E</span><span>M</span><span>B</span><span>E</span><span>R</span></div>
+  <div class="splash-tag">The Essence of a Recall</div>
+  <div class="splash-by">made by J</div>
+</div>
 
 <!-- Update banner: shown by sw registration when new content is waiting -->
 <div id="update-banner" class="update-banner" hidden>

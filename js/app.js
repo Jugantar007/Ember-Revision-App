@@ -170,6 +170,34 @@
     return 'Good evening';
   }
 
+  /** "Good evening, Jugantar" — first name only, so it fits on one line. */
+  function greetingLine() {
+    const first = (Store.name || '').split(' ')[0];
+    return first ? `${greeting()}, ${first}` : greeting();
+  }
+
+  function dateLabel() {
+    try {
+      return new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
+    } catch (_) {
+      return new Date().toDateString();
+    }
+  }
+
+  function viewWelcome() {
+    return `
+      <div class="welcome">
+        <img class="welcome-fly" src="./assets/butterfly.png" alt="">
+        <div class="eyebrow">Welcome to Ember</div>
+        <h1 class="h1">What should we call you?</h1>
+        <p class="sub" style="margin-top:8px">Your name goes on your daily greeting. It stays on this phone.</p>
+        <input type="text" id="name-input" maxlength="24" autocomplete="given-name"
+          autocapitalize="words" enterkeyhint="go" placeholder="Your first name" aria-describedby="name-err">
+        <div id="name-err" class="field-err" hidden>Enter your name to continue</div>
+        <button class="btn btn-primary btn-block" data-act="save-name">Continue</button>
+      </div>`;
+  }
+
   function viewHome() {
     const m = Session.mission();
     const streak = Store.liveStreak();
@@ -193,8 +221,8 @@
     return `
       <div class="row-between" style="margin-bottom:16px">
         <div>
-          <div class="eyebrow">${esc(greeting())}</div>
-          <h1 class="h1">Today</h1>
+          <div class="eyebrow">${esc(dateLabel())}</div>
+          <h1 class="h1 greet">${esc(greetingLine())}</h1>
         </div>
         ${streak > 0 ? `<div class="streak-chip">${ICONS.flame}${streak}</div>` : ''}
       </div>
@@ -631,7 +659,19 @@
     return `
       <h1 class="h1" style="margin-bottom:16px">Settings</h1>
 
-      <h2 class="h2">Daily mission</h2>
+      <h2 class="h2">Profile</h2>
+      <div class="card">
+        <div class="field-label">Your name</div>
+        <div class="field-help">Used in the greeting on the home screen.</div>
+        <div class="row" style="margin-top:10px">
+          <input type="text" id="rename-input" class="grow" maxlength="24" autocapitalize="words"
+            value="${esc(Store.name)}" placeholder="Your first name" aria-describedby="name-err">
+          <button class="btn btn-sm" data-act="rename">Save</button>
+        </div>
+        <div id="name-err" class="field-err" hidden>Enter your name to continue</div>
+      </div>
+
+      <h2 class="h2" style="margin-top:24px">Daily mission</h2>
       <div class="card">
         <div class="field">
           <div class="grow">
@@ -793,7 +833,16 @@
   function render() {
     const hash = location.hash.replace(/^#\/?/, '') || 'home';
     const parts = hash.split('/');
-    const root = parts[0];
+    let root = parts[0];
+
+    // First launch: nobody gets past the welcome screen without a name.
+    if (!Store.name && root !== 'welcome') {
+      history.replaceState(null, '', '#/welcome');
+      root = 'welcome';
+    } else if (Store.name && root === 'welcome') {
+      history.replaceState(null, '', '#/home');
+      root = 'home';
+    }
 
     clearOverlay();
     view.className = 'view';
@@ -803,6 +852,11 @@
     let navKey = root;
 
     switch (root) {
+      case 'welcome':
+        html = viewWelcome();
+        nav.hidden = true;
+        break;
+
       case 'home':
         html = viewHome();
         break;
@@ -857,6 +911,22 @@
     view.innerHTML = html;
     setNavActive(navKey);
     if (root !== 'study' && root !== 'quiz') window.scrollTo(0, 0);
+
+    // Enter on the keyboard submits the name, same as tapping the button.
+    ['name-input', 'rename-input'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        const err = document.getElementById('name-err');
+        if (err) err.hidden = true;
+      });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitName(id === 'name-input' ? 'save-name' : 'rename');
+        }
+      });
+    });
 
     const qbox = document.getElementById('q');
     if (qbox) {
@@ -1048,6 +1118,11 @@
         }
         break;
 
+      case 'save-name':
+      case 'rename':
+        submitName(act);
+        break;
+
       case 'dismiss-complete':
         clearOverlay();
         break;
@@ -1146,6 +1221,48 @@
     });
   }
 
+  function submitName(act) {
+    const input = document.getElementById(act === 'save-name' ? 'name-input' : 'rename-input');
+    const err = document.getElementById('name-err');
+    const value = input ? input.value.trim() : '';
+    if (!value) {
+      if (err) err.hidden = false;
+      if (input) input.focus();
+      return;
+    }
+    const name = Store.setName(value);
+    if (input) input.blur();
+    if (act === 'save-name') {
+      Session.haptic(20);
+      go('#/home');
+      toast(`Welcome, ${name.split(' ')[0]}`, 'accent');
+    } else {
+      toast('Name updated', 'accent');
+      render();
+    }
+  }
+
+  /* ---------------------------- splash ---------------------------------- */
+
+  const SPLASH_MIN_MS = 1750;   // long enough for the flap + wordmark, short enough for daily use
+
+  function liftSplash(immediate) {
+    const el = document.getElementById('splash');
+    if (!el || el.classList.contains('out')) return;
+    const wait = immediate ? 0 : Math.max(0, SPLASH_MIN_MS - performance.now());
+    setTimeout(() => {
+      el.classList.add('out');
+      // Replay the view's entrance so the app rises in as the splash lifts away.
+      view.style.animation = 'none';
+      void view.offsetHeight;
+      view.style.animation = '';
+      setTimeout(() => el.remove(), 650);
+    }, wait);
+  }
+
+  const splashEl = document.getElementById('splash');
+  if (splashEl) splashEl.addEventListener('click', () => liftSplash(true));
+
   async function boot() {
     try {
       await Content.ready();
@@ -1162,6 +1279,7 @@
           </p>
         </div>`;
       nav.hidden = true;
+      liftSplash(true);
       return;
     }
 
@@ -1175,8 +1293,9 @@
       localStorage.setItem('pyrev.contentVersion', now);
     } catch (_) {}
 
-    if (!location.hash) location.hash = '#/home';
+    if (!location.hash) history.replaceState(null, '', '#/home');
     render();
+    liftSplash();
     registerSW();
     Notify.maybeNudge();
   }
